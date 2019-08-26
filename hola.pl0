@@ -1,0 +1,6 @@
+CONST hola = 5, bueno = 8;
+VAR que, bien, hola, pl0;
+PROCEDURE proc:
+    VAR p = 5;
+;
+CALL proc.
