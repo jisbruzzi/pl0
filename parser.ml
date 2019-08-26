@@ -1,30 +1,43 @@
-type programa = 
-  | ProgramaVacio
-type parseo = 
-  | ParseoVacio
-  | ParseoConString of programa * string
-type 
-let crear_parseo_con_string (p:programa) (tokens:string):parseo =
-  match tokens with
-  | "CONST" -> (print_string "!!TENGO CONST!!!"; ParseoConString (p,""))
-  | e -> (print_string "eee"; ParseoConString(p,e) )
+type 'a lazylist = 
+  | Cons of 'a * (unit -> 'a lazylist)
+  | Empty
+type 'a gen_lazylist = unit-> 'a lazylist
 
+type token = Const | Var | Procedure
 
-let agregar_char parseo (c:string) =
-  print_string c;
-  match parseo with
-  | ParseoVacio -> crear_parseo_con_string ProgramaVacio c
-  | ParseoConString (p, l) -> crear_parseo_con_string p (l^c)
+let file_to_lazylist (name:string) : string gen_lazylist = 
+  let file = open_in name in
+  let stream = Stream.of_channel file in
+  let rec generator=
+    fun () -> try
+      Cons( String.make 1 (Stream.next stream),generator)
+    with Stream.Failure -> Empty
+  in generator
 
-let rec parsear_in_channel (ic:in_channel)(p:parseo)(largo:int) = 
-  if largo > 0 then
-    let nuevo_parseo=really_input_string ic 1 |> agregar_char p in parsear_in_channel ic nuevo_parseo (largo-1)
-  else
-    p
+type token=Const|Var|Procedure|Ident of string
 
-let () =
-  let ic = open_in "hola.pl0" in 
-  let p = parsear_in_channel ic ParseoVacio (in_channel_length ic) in
-  match p with
-  | ParseoVacio ->()
-  | ParseoConString (p,l) -> print_string l
+let get_token(s:string): token option =
+  match s with
+  | "CONST" -> Some(Const)
+  | "VAR"->Some(Var)
+  | "PROCEDURE"->Some(Procedure)
+  | e->None
+
+let rec tokenize (maybe_token:string)(file:string gen_lazylist):token gen_lazylist =
+  fun ()-> 
+    match get_token(maybe_token) with
+    | Some(t)->Cons(t,tokenize "" file)
+    | None -> 
+      match (file ()) with
+      | Cons(c,next_file) -> (tokenize (maybe_token^c) next_file)()
+      | Empty -> Cons(Ident(maybe_token),fun ()->Empty)
+
+let print_token t=
+  match t with
+  | Const -> print_string "CONST"
+  | e->()
+  
+let rec print_tokens(tokens:token gen_lazylist)=
+  match (tokens()) with
+  | Empty -> ()
+  | Cons(t,lst) -> (print_token t);(print_tokens lst)
