@@ -3,41 +3,25 @@ type 'a lazylist =
   | Empty
 type 'a gen_lazylist = unit-> 'a lazylist
 
-let read_lazy_file (name:string) : string gen_lazylist = 
+let read_lazy_file (name:string) : char gen_lazylist = 
   let file = open_in name in
   let stream = Stream.of_channel file in
   let rec generator=
     fun () -> try
-      Cons( String.make 1 (Stream.next stream),generator)
+      Cons( (Stream.next stream),generator)
     with Stream.Failure -> (close_in file;Empty)
   in generator
 
+type token=Const|Var|Procedure|Ident of string|Igual|Entero of int |Punto|EndOfFileToken
 
-type token=Const|Var|Procedure|Ident of string|Igual|Entero of int |Punto
-
-let match_con_regex (r_string:string)(s:string):bool=
-  Str.string_match (Str.regexp r_string) s 0
-
-let separador s=
-  String.make 1 (String.get s (String.length s - 1))
-
-let finaliza_con_separador s =
-  if String.length s = 0 then false else
-  match separador s with
-  |"=" -> true
-  |","->true
-  |";"->true
-  |"."->true
-  |" "->true
-  | "\n"->true 
-  | _ ->false
-
-let token_que_finaliza_con_separador s=
-  let l=String.length s in 
-  let s = String.sub s 0 (l - 1) in
-  let s = String.trim s in
-  s(*Str.global_replace (Str.regexp "\n")*)
-
+type automata_state=
+  |Initial
+  |TransitionIdent of string
+  |TransitionNumber of string
+  |Terminal of (token*char)
+  |EndOfFileState
+  |NUL
+  |Point
 
 let get_token(s:string): (string * token option) =
   if finaliza_con_separador s then
@@ -55,17 +39,51 @@ let get_token(s:string): (string * token option) =
     )
   else (s,None)
 
-let rec tokenize (maybe_token:string)(file:string gen_lazylist):token gen_lazylist =
+let string_of_char (c:char):string=String.make 1 c
+let string_with_char s c=s^string_of_char c
+let character_matches (r:string)(c:char):bool=
+  let rr=Str.regexp r in
+  let s=string_of_char c in
+  Str.string_match rr s 0
+
+type char_type=Decimal|Alphabetic|Other of char|Space
+let get_type (c:char):char_type=
+  if character_matches "[0-9]" c then Decimal else
+  if character_matches "[A-Za-z]" c then Alphabetic else
+  if character_matches "[ \n]" c then Space else
+  Other(c)
+
+
+
+let next_state (s:automata_state)(c:char option):automata_state=
+  match c with
+  | None -> EndOfFileState
+  | Some(c)->
+    match (s,get_type c) with
+    | (Initial,Decimal) -> TransitionNumber( string_of_char c )
+    | (Initial,Alphabetic) -> TransitionIdent(string_of_char c)
+    | (Initial,Other(oc)) -> if oc='.' then Point else NUL
+    | (Initial,Space) -> s
+    | (TransitionIdent(s),(Decimal|Alphabetic))-> TransitionIdent(string_with_char s c)
+    | (TransitionIdent(s),_) -> Terminal( Ident(s),c)
+    | (TransitionNumber(s),Decimal)->TransitionNumber(string_with_char s c)
+    | (TransitionNumber(s),_) ->Terminal(Entero(s),c)
+    | _ -> Initial (* ME HACE RUIDO DESHACERME DE c ACÁ! *)
+      
+
+
+let rec tokenize (s:automata_state)(file:char gen_lazylist):token gen_lazylist =
   fun ()-> 
-    match get_token(maybe_token) with
-    | (s,Some(t))->Cons(t,tokenize s file)
-    | (s,None) -> 
-      match (file ()) with
-      | Cons(c,next_file) -> (tokenize (s^c) next_file)()
-      | Empty -> 
-        match s with
-        | "" -> Empty
-        | e -> (print_string e;(tokenize s (fun () -> Empty))())(*ACÁ LOOPEA POR SIEMPRE!! Es el mismo llamado!!*)
+    match (file()) with
+    | Empty -> (tokenize (next_state s None) file)()
+    | Cons(c,next_file)->
+      match s with
+      | EndOfFileState -> Cons(EndOfFileToken,fun ()->Empty)
+      | Terminal(t,c) -> Cons(
+        t,
+        (tokenize ( next_state Initial (Some c) ) next_file)
+      )
+      | e-> (tokenize (next_state s (Some c)) next_file)()
 
 let print_token t=
   match t with
@@ -75,6 +93,7 @@ let print_token t=
   | Ident e -> print_string ("|IDENT:"^e)
   | Igual -> print_string ("|IGUAL")
   | Entero e->print_string("|ENTERO")
+  | Punto->print_string("|PUNTO")
 
 let rec print_tokens(tokens:token gen_lazylist)=
   match (tokens()) with
