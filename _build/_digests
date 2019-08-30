@@ -1,0 +1,4 @@
+"Rule: ocaml: ml -> cmo & cmi (%=parser )": "^\128\192\005\156G!\227+\238\223g\198\230\201r"
+"Rule: ocaml dependencies ml (%=parser )": "\132y8\018n\146[\002U\t\167\193\170\238\172\152"
+"Resource: /home/jose/pl0/parser.ml": "\176\001\197\200\1491\202 \166\005+\243\202\177\209o"
+"Rule: ocaml: cmo* -> byte (%=parser )": "\026\030\206\200\146C\249-\228~\241V-P5("
