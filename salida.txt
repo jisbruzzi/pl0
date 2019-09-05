@@ -1,0 +1,7 @@
+1:CONST hola = 5, bueno = 8;
+1:VAR que, bien, hola, pl0;
+2:PROCEDURE proc:
+3:    VAR p = 5, cadena="hola, soy una cadena", q=5*(p+8);
+4:
+5:;
+6:CALL proc.
