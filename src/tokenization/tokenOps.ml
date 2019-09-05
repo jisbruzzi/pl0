@@ -45,7 +45,10 @@ let print_token t=
 let rec print_tokens(tokens:token Lazylist.gen_t)=
   match (tokens()) with
   | Empty -> ()
-  | Cons(t,lst) -> (print_token t);(print_tokens lst)
+  | Cons(t,lst) -> 
+    (print_token t);
+    (print_char '\n');
+    (print_tokens lst)
 
 let get_ident_or_keyword (s:string):token=
   match String.uppercase_ascii s with

@@ -1,4 +1,4 @@
-PRJ awesome
+PRJ pl0
 S src/**
 
 PKG ounit
