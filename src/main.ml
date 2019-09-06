@@ -28,6 +28,7 @@ let compile (opt:options):unit =
     |> (if log then ReadFile.log_lines_and_pass else pass_char)
     |> ReadFile.add_coordinates
     |> Tokenize.run 
+    |> Verifier.run
     |> (if print_tokens then TokenOps.print_tokens_coords else kill)
   |[]->()
   
