@@ -1,3 +1,2 @@
-type token = Token.t
 type automata_state
-val run:char Lazylist.gen_t->token Lazylist.gen_t
+val run:CharWithCoords.t Lazylist.gen_t->TokenWithCoords.t Lazylist.gen_t

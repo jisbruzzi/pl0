@@ -3,6 +3,7 @@ default: main
 main: main.native
 
 test: test.native
+	./test
 
 clean: 
 	rm -rf _build

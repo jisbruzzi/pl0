@@ -26,8 +26,9 @@ let compile (opt:options):unit =
   | hd::tl -> hd 
     |> ReadFile.read_lazy_file 
     |> (if log then ReadFile.log_lines_and_pass else pass_char)
+    |> ReadFile.add_coordinates
     |> Tokenize.run 
-    |> (if print_tokens then TokenOps.print_tokens else kill)
+    |> (if print_tokens then TokenOps.print_tokens_coords else kill)
   |[]->()
   
 let () =

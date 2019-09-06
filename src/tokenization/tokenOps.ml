@@ -10,7 +10,7 @@ let string_of_token (t:token)=
   | Integer e->"ENTERO:"^e
   | Point->"PUNTO"
   | EndOfFileToken -> "EOF"
-  | Nul -> "NULL"
+  | Nul c -> "NULL:"^(String.make 1 c)
   | Assignation -> "ASIGNACION"
   | Comma -> "COMA"
   | Semicolon -> "PUNTOYCOMA"
@@ -39,8 +39,14 @@ let string_of_token (t:token)=
   | Write->"WRITE"
   | Odd->"ODD"
 
-let print_token t=
-  print_string ("|"^(string_of_token t))
+let string_of_token_coords (tc:TokenWithCoords.t)=
+  match tc with (Coords.Coord(line,col),t) -> 
+  "( l:"^(string_of_int line)^" , "^ (string_of_int col) ^" )"^string_of_token(t)
+
+
+let print_token t = print_string ("|"^(string_of_token t))
+
+let print_token_coords tc = print_string ("|" ^ string_of_token_coords tc)
 
 let rec print_tokens(tokens:token Lazylist.gen_t)=
   match (tokens()) with
@@ -49,6 +55,14 @@ let rec print_tokens(tokens:token Lazylist.gen_t)=
     (print_token t);
     (print_char '\n');
     (print_tokens lst)
+
+let rec print_tokens_coords (tokens:TokenWithCoords.t Lazylist.gen_t) =
+  match (tokens()) with
+  | Empty -> ()
+  | Cons(t,lst) -> 
+    (print_token_coords t);
+    (print_char '\n');
+    (print_tokens_coords lst)
 
 let get_ident_or_keyword (s:string):token=
   match String.uppercase_ascii s with

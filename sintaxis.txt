@@ -1,0 +1,29 @@
+programa ::= bloque '.'
+bloque ::= (
+  'CONST' 'ident' '=' 'número' ( ',' 'ident' '=' 'número')* ';'
+)?
+(
+  'VAR' 'ident' (',' 'ident')*
+)?
+( 
+'PROCEDURE' 'ident' ':' 'bloque' ';' 
+)*
+proposición
+
+proposición ::= 
+( 'ident' ':=' expresión )?
+( 'CALL' 'ident' )?
+( 'BEGIN' proposición ( ';' proposición )* )?
+( 'IF' condición 'THEN' proposición)?
+( 'WHILE' condición 'DO' proposición )?
+( 'READLN' '(' 'ident' ( ',' 'ident' )* ')' )?
+( WRITELN ('(' ('cadena'|expresión) ( ',' ('cadena'|expresión))* ')')? )?
+( WRITE '(' ('cadena'|expresión) ( ',' ('cadena'|expresión))* ')' )?
+
+condición ::= ( 'ODD' expresión ) | ( expresión ('=' | '<>' | '<' | '<=' | '>' | '>=') expresión )
+
+expresión ::= ('+' | '-')? término ( ('+'|'-') término )*
+
+término ::= factor ( ('*' | '/' ) factor )*
+
+factor ::= 'ident' | 'número' | ( '(' expresión ')' )

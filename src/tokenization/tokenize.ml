@@ -1,7 +1,9 @@
 type token = Token.t
+type token_coords = TokenWithCoords.t
 
 let string_of_char (c:char):string=String.make 1 c
 let string_with_char s c=s^string_of_char c
+
 let character_matches (r:string)(c:char):bool=
   let rr=Str.regexp r in
   let s=string_of_char c in
@@ -11,90 +13,88 @@ type char_type=Decimal|Alphabetic|Other|Space
 let get_type (c:char):char_type=
   if character_matches "[0-9]" c then Decimal else
   if character_matches "[A-Za-z]" c then Alphabetic else
-  if character_matches "[ \n]" c then Space else
+  if character_matches "[ \n\t\r]" c then Space else
   Other
 
 type automata_state=
   |Initial
-  |TransitionIdentOrKw of string
-  |TransitionNumber of string
-  |Terminal of (token*char)
-  |TerminalNoChar of token
+  |TransitionIdentOrKw of Coords.t*string
+  |TransitionNumber of Coords.t*string
+  |Terminal of (token_coords*CharWithCoords.t)
+  |TerminalNoChar of token_coords
   |EndOfFileState
-  |TransitionString of string
-  |TransitionOperator of string
+  |TransitionString of Coords.t*string
+  |TransitionOperator of Coords.t*string
 
-let next_state (s:automata_state)(c:char option):automata_state=
+let next_state (s:automata_state)(c:CharWithCoords.t option):automata_state=
   match c with
   | None -> EndOfFileState
-  | Some(c)->
+  | Some(cc)->match cc with (coords,c)->
     (*print_string("%"^(string_of_char c));*)
     match (s,get_type c) with
     | ((Initial|Terminal(_,_)|TerminalNoChar(_)),ct) ->
       (match ct with
-        | Decimal -> TransitionNumber( string_of_char c )
-        | Alphabetic -> TransitionIdentOrKw(string_of_char c)
+        | Decimal -> TransitionNumber(coords,string_of_char c )
+        | Alphabetic -> TransitionIdentOrKw(coords,string_of_char c)
         | Other -> (
           match c with
-          | '.' -> TerminalNoChar(Point)
-          | '=' -> TerminalNoChar(Equals)
-          | ',' -> TerminalNoChar(Comma)
-          | ';' -> TerminalNoChar(Semicolon)
-          | '+' -> TerminalNoChar(Plus)
-          | '-' -> TerminalNoChar(Minus)
-          | '/' -> TerminalNoChar(Divide)
-          | '*' -> TerminalNoChar(Times)
-          | '(' -> TerminalNoChar(OpenParenthesis)
-          | ')' -> TerminalNoChar(ClosedParenthesis)
-          | ':' -> TransitionOperator(string_of_char c)
-          | '"' -> TransitionString("")
-          | _ -> Terminal(Nul,c)
+          | '.' -> TerminalNoChar(coords,Point)
+          | '=' -> TerminalNoChar(coords,Equals)
+          | ',' -> TerminalNoChar(coords,Comma)
+          | ';' -> TerminalNoChar(coords,Semicolon)
+          | '+' -> TerminalNoChar(coords,Plus)
+          | '-' -> TerminalNoChar(coords,Minus)
+          | '/' -> TerminalNoChar(coords,Divide)
+          | '*' -> TerminalNoChar(coords,Times)
+          | '(' -> TerminalNoChar(coords,OpenParenthesis)
+          | ')' -> TerminalNoChar(coords,ClosedParenthesis)
+          | ':' -> TransitionOperator(coords,string_of_char c)
+          | '\'' -> TransitionString(coords,"")
+          | _ -> TerminalNoChar(coords,Nul(c))
         )
         | Space -> Initial
       )
 
-    |(TransitionIdentOrKw(s),(Decimal|Alphabetic)) -> TransitionIdentOrKw(string_with_char s c)
-    |(TransitionIdentOrKw(s),_) -> Terminal( TokenOps.get_ident_or_keyword(s),c)
+    |(TransitionIdentOrKw(coords,s),(Decimal|Alphabetic)) -> TransitionIdentOrKw(coords,string_with_char s c)
+    |(TransitionIdentOrKw(coords,s),_) -> Terminal( (coords,TokenOps.get_ident_or_keyword(s)),cc)
 
-    |(TransitionNumber(s),Decimal) -> print_string("D");TransitionNumber(string_with_char s c)
-    |(TransitionNumber(s),Space) -> Terminal(Integer(s),c)
-    |(TransitionNumber(s),Alphabetic) -> Terminal(Nul,c)
-    |(TransitionNumber(s),Other) -> Terminal(Integer(s),c)
+    |(TransitionNumber(coords,s),Decimal) -> print_string("D");TransitionNumber(coords,string_with_char s c)
+    |(TransitionNumber(coords,s),(Space|Alphabetic|Other)) -> Terminal((coords,Integer(s)),cc)
 
-    |(TransitionString(s),Other) when c='"' -> TerminalNoChar(StringTerminal(s))
-    |(TransitionString(s),_) -> TransitionString(string_with_char s c)
+    |(TransitionString(coords,s),Other) when c='\'' -> TerminalNoChar(coords,StringTerminal(s))
+    |(TransitionString(coords,s),_) -> TransitionString(coords,string_with_char s c)
 
-    |(TransitionOperator(":"),Other) when c='=' -> TerminalNoChar(Assignation)
-    |(TransitionOperator(":"),_) -> Terminal(Colon,c)
-    |(TransitionOperator("<"),Other) when c='=' -> TerminalNoChar(LessOrEqual)
-    |(TransitionOperator("<"),_) -> Terminal(Less,c)
-    |(TransitionOperator(">"),Other) when c='=' -> TerminalNoChar(GreaterOrEqual)
-    |(TransitionOperator(">"),_) -> TerminalNoChar(Greater)
-    |(TransitionOperator(_),_) -> Terminal(Nul,c)
+    |(TransitionOperator(coords,":"),Other) when c='=' -> TerminalNoChar(coords,Assignation)
+    |(TransitionOperator(coords,":"),_) -> Terminal((coords,Colon),cc)
+    |(TransitionOperator(coords,"<"),Other) when c='=' -> TerminalNoChar(coords,LessOrEqual)
+    |(TransitionOperator(coords,"<"),_) -> Terminal((coords,Less),cc)
+    |(TransitionOperator(coords,">"),Other) when c='=' -> TerminalNoChar(coords,GreaterOrEqual)
+    |(TransitionOperator(coords,">"),_) -> TerminalNoChar(coords,Greater)
+    |(TransitionOperator(coords,_),_) -> TerminalNoChar(coords,Nul(c))
 
-    |(EndOfFileState,_)->Terminal(Nul,c)
+    |(EndOfFileState,_)->TerminalNoChar(Coords.Coord(0,0),Nul(c))
 
 
-let rec run (s:automata_state)(file:char Lazylist.gen_t):token Lazylist.gen_t =
+let rec run (s:automata_state)(file:CharWithCoords.t Lazylist.gen_t):token_coords Lazylist.gen_t =
   fun ()-> 
-  let rec create_next =  fun  (c:char)(f:char Lazylist.gen_t) -> (run ( next_state s (Some c) ) f) 
+  let rec create_next =  fun  (cc:CharWithCoords.t)(f:CharWithCoords.t Lazylist.gen_t) -> (run ( next_state s (Some cc) ) f) 
   in
     match s with
-    | Terminal(t,c) -> Cons(
+    | Terminal(t,cc) -> Cons(
           t,
-          create_next c file
+          create_next cc file
         )
     | _ ->
       match (file()) with
-      | Empty -> Cons(EndOfFileToken,fun ()->Empty)
-      | Cons(c,next_file)->
+      | Empty -> Cons((Coords.Coord(0,0),EndOfFileToken),fun ()->Empty)
+      | Cons(cc,next_file)->
         match s with
         | TerminalNoChar(t) -> Cons(
             t,
-            create_next c next_file
+            create_next cc next_file
           )
-        | EndOfFileState -> Cons(EndOfFileToken,fun ()->Empty)
-        | e-> create_next c next_file ()
+        | EndOfFileState -> Cons((Coords.Coord(0,0),EndOfFileToken),fun ()->Empty)
+        | e-> create_next cc next_file ()
 
-let run (file:char Lazylist.gen_t):token Lazylist.gen_t =
+let run (file:CharWithCoords.t Lazylist.gen_t):token_coords Lazylist.gen_t =
   run Initial file
