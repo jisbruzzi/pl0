@@ -35,3 +35,4 @@ type t=
 |Writeln
 |Write
 |Odd
+|Distinct
