@@ -4,7 +4,7 @@ exception SyntaxException of (t*TokenWithCoords.t)
 let string_of_error(e:t):string=
 match e with
 |NoError -> "NoError"
-|TokenExpected(t) -> "TokenExpected: "^TokenOps.string_of_token(t)
+|TokenExpected(t) -> "TokenExpected: ´"^TokenOps.string_of_token(t)^"'"
 |IdentifierExpected -> "IdentifierExpected"
 |StringExpected -> "StringExpected"
 |IntegerExpected -> "IntegerExpected"

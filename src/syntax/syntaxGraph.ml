@@ -56,29 +56,38 @@ let condition_fn (expression:pattern) ():pattern = Or([
 
 let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
   let proposition=In(proposition_fn condition expression,"proposicion") in 
-  Sequence([  
-    Maybe(Sequence([m_ident;m Token.Assignation;expression]));
-    Maybe(Sequence([m Token.Call; m_ident]));
-    Maybe(Sequence([m Token.Begin;proposition;Asterisk(Sequence([m Token.Semicolon; proposition]))]));
-    Maybe(Sequence([m Token.If;condition;m Token.Then;proposition]));
-    Maybe(Sequence([m Token.While;condition;m Token.Do;proposition]));
-    Maybe(Sequence([m Token.Writeln;Maybe(Sequence([
+  Maybe(Or([  
+    Sequence([m_ident;m Token.Assignation;expression]);
+    Sequence([m Token.Call; m_ident]);
+    (Sequence([m Token.Begin;proposition;Asterisk(Sequence([m Token.Semicolon; proposition]));m Token.End]));
+    (Sequence([m Token.If;condition;m Token.Then;proposition]));
+    (Sequence([m Token.While;condition;m Token.Do;proposition]));
+    (Sequence([m Token.Writeln;Maybe(Sequence([
       m Token.OpenParenthesis; 
       Or([m_string;expression]);
       Asterisk(Sequence([
-        m Token.Comma; m_ident
+        m Token.Comma; Or([m_string;expression]);
       ]));
       m Token.ClosedParenthesis
     ]))]));
-    Maybe(Sequence([
+    (Sequence([
       m Token.Write;
       m Token.OpenParenthesis;
       Or([m_string;expression]);
       Asterisk(Sequence([
         m Token.Comma;Or([m_string;expression])
-      ]))
-    ]))
-  ])
+      ]));
+      m Token.ClosedParenthesis
+    ]));
+    (Sequence([
+      m Token.Readln;
+      m Token.OpenParenthesis;
+      m_ident;
+      Asterisk(Sequence([m Token.Comma;m_ident]));
+      m Token.ClosedParenthesis
+    ]));
+
+  ]))
 
 let rec block_fn (proposition:pattern) ():pattern = Sequence([
   Maybe(Sequence([
@@ -88,17 +97,17 @@ let rec block_fn (proposition:pattern) ():pattern = Sequence([
     m_integer;
     Asterisk(Sequence([m Token.Comma;m_ident;m Token.Equals;m_integer]));
     m Token.Semicolon
-    ]));
+  ]));
   Maybe(Sequence([
     m Token.Var; m_ident;Asterisk(Sequence([m Token.Comma; m_ident]));m Token.Semicolon
   ]));
   Asterisk(Sequence([
-    m Token.Procedure; m_ident; m Token.Colon; In(block_fn proposition,"bloque"); m Token.Semicolon
+    m Token.Procedure; m_ident; m Token.Semicolon; In(block_fn proposition,"bloque"); m Token.Semicolon
   ]));
   proposition
 ])
 
-let program_fn (block:pattern)():pattern = Sequence( [ block; m Token.Point ] )
+let program_fn (block:pattern)():pattern = Sequence( [ block; m Token.Point;m Token.EndOfFileToken ] )
 
 let build ():pattern =
   let expression = In(expresion_fn,"expresion") in

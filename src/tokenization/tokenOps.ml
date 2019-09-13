@@ -38,6 +38,7 @@ let string_of_token (t:token)=
   | Writeln->"WRITELN"
   | Write->"WRITE"
   | Odd->"ODD"
+  | Distinct -> "DISTINCT"
 
 let string_of_token_coords (tc:TokenWithCoords.t)=
   match tc with (Coords.Coord(line,col),t) -> 

@@ -50,6 +50,8 @@ let next_state (s:automata_state)(c:CharWithCoords.t option):automata_state=
           | ')' -> TerminalNoChar(coords,ClosedParenthesis)
           | ':' -> TransitionOperator(coords,string_of_char c)
           | '\'' -> TransitionString(coords,"")
+          | '<' -> TransitionOperator(coords,"<")
+          | '>' -> TransitionOperator(coords,">")
           | _ -> TerminalNoChar(coords,Nul(c))
         )
         | Space -> Initial
@@ -67,7 +69,9 @@ let next_state (s:automata_state)(c:CharWithCoords.t option):automata_state=
     |(TransitionOperator(coords,":"),Other) when c='=' -> TerminalNoChar(coords,Assignation)
     |(TransitionOperator(coords,":"),_) -> Terminal((coords,Colon),cc)
     |(TransitionOperator(coords,"<"),Other) when c='=' -> TerminalNoChar(coords,LessOrEqual)
+    |(TransitionOperator(coords,"<"),Other) when c='>' -> TerminalNoChar(coords,Distinct)
     |(TransitionOperator(coords,"<"),_) -> Terminal((coords,Less),cc)
+    
     |(TransitionOperator(coords,">"),Other) when c='=' -> TerminalNoChar(coords,GreaterOrEqual)
     |(TransitionOperator(coords,">"),_) -> TerminalNoChar(coords,Greater)
     |(TransitionOperator(coords,_),_) -> TerminalNoChar(coords,Nul(c))
@@ -85,16 +89,15 @@ let rec run (s:automata_state)(file:CharWithCoords.t Lazylist.gen_t):token_coord
           create_next cc file
         )
     | _ ->
-      match (file()) with
-      | Empty -> Cons((Coords.Coord(0,0),EndOfFileToken),fun ()->Empty)
-      | Cons(cc,next_file)->
-        match s with
-        | TerminalNoChar(t) -> Cons(
-            t,
-            create_next cc next_file
-          )
-        | EndOfFileState -> Cons((Coords.Coord(0,0),EndOfFileToken),fun ()->Empty)
-        | e-> create_next cc next_file ()
+      match (file(),s) with
+      | (Empty,TerminalNoChar(coords,Point)) -> Cons((coords,Point),fun ()->Empty)
+      | (Empty,_) -> Cons((Coords.Coord(0,0),EndOfFileToken),fun ()->Empty)
+      | (Cons(cc,next_file),TerminalNoChar(t))->Cons(
+          t,
+          create_next cc next_file
+        )
+      | (Cons(cc,next_file),EndOfFileState) -> Cons((Coords.Coord(0,0),EndOfFileToken),fun ()->Empty)
+      | (Cons(cc,next_file),_)-> create_next cc next_file ()
 
 let run (file:CharWithCoords.t Lazylist.gen_t):token_coords Lazylist.gen_t =
   run Initial file

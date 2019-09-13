@@ -13,7 +13,6 @@ let rec error (p:pattern)(t:Token.t):SyntaxError.t=
   | Or(p::[])->(error p t)
   | Or(p::tl)->if (ok p t) then SyntaxError.NoError else let p=Pattern.Or(tl) in (error p t)
   | Or([])->SyntaxError.NoError 
-  (* NINGÚN NEXT DEBE DEJARME EN ESTE ESTADO!! (creo?) *)
   | In(p_fun,_)->(error (p_fun () ) t)
   | Nothing -> SyntaxError.NothingExpected
   | NoMatch -> SyntaxError.NothingExpected)
@@ -52,13 +51,14 @@ let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):
       (if log then (
         (print_string "-------\n");
         (PatternOps.print_pattern tester);
+        (print_string "--WITH TOKEN:--");
         (TokenOps.print_token token);
         (print_string "-------\n")
       ));
       if (( error tester token ) = SyntaxError.NoError) 
       then fun () -> Cons(token_coords,(run log lst (next tester token)))
       else raise (SyntaxError.SyntaxException((error tester token),token_coords))
-  | Empty -> (fun () ->Lazylist.Empty)
+  | Empty -> (fun () -> Lazylist.Empty)
 
 
 let run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t):TokenWithCoords.t Lazylist.gen_t =

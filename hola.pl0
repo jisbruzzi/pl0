@@ -1,8 +1,7 @@
 CONST hola = 5, bueno = 8;
-VAR que, bien, hola, pl0;
-PROCEDURE proc:
+VAR que, bien, pl0;
+PROCEDURE proc;
     CONST p = 5, cadena=9, q=5;
-    VAR p,q,r;
-
+    VAR s,o,r;
 ;
 CALL proc.

@@ -2,14 +2,14 @@ var K;
 procedure P;
   procedure coma;
   begin
-    write (',')
+    write (',');
     K := K + 1;
     call P
   end;
 begin
   if K < 10 then
     begin
-      write coma;
+      write (coma);
       call K;
     end
 end;
@@ -18,4 +18,4 @@ begin
   K := 1;
   call P;
   writeln (10)
-
+end.
