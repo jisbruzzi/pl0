@@ -1,7 +1,16 @@
-type t = NoError|TokenExpected of Token.t|IdentifierExpected|StringExpected|IntegerExpected|NothingExpected|NoMatch
+type t = NoError 
+|TokenExpected of Token.t
+|IdentifierExpected
+|StringExpected
+|IntegerExpected
+|NothingExpected
+|NoMatch of t
+|InvalidPattern
+|AlternativeErrors of t list
+
 exception SyntaxException of (t*TokenWithCoords.t)
 
-let string_of_error(e:t):string=
+let rec string_of_error(e:t):string=
 match e with
 |NoError -> "NoError"
 |TokenExpected(t) -> "TokenExpected: ´"^TokenOps.string_of_token(t)^"'"
@@ -9,4 +18,6 @@ match e with
 |StringExpected -> "StringExpected"
 |IntegerExpected -> "IntegerExpected"
 |NothingExpected -> "NothingExpected"
-|NoMatch->"NoMatch"
+|NoMatch(e)->"NoMatch:"^string_of_error e
+|InvalidPattern -> "InvalidPattern"
+|AlternativeErrors(l) -> "AlternativeErrors:"^String.concat "|" (List.map string_of_error l)

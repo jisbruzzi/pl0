@@ -30,7 +30,6 @@ let next_state (s:automata_state)(c:CharWithCoords.t option):automata_state=
   match c with
   | None -> EndOfFileState
   | Some(cc)->match cc with (coords,c)->
-    (*print_string("%"^(string_of_char c));*)
     match (s,get_type c) with
     | ((Initial|Terminal(_,_)|TerminalNoChar(_)),ct) ->
       (match ct with
@@ -60,7 +59,7 @@ let next_state (s:automata_state)(c:CharWithCoords.t option):automata_state=
     |(TransitionIdentOrKw(coords,s),(Decimal|Alphabetic)) -> TransitionIdentOrKw(coords,string_with_char s c)
     |(TransitionIdentOrKw(coords,s),_) -> Terminal( (coords,TokenOps.get_ident_or_keyword(s)),cc)
 
-    |(TransitionNumber(coords,s),Decimal) -> print_string("D");TransitionNumber(coords,string_with_char s c)
+    |(TransitionNumber(coords,s),Decimal) -> TransitionNumber(coords,string_with_char s c)
     |(TransitionNumber(coords,s),(Space|Alphabetic|Other)) -> Terminal((coords,Integer(s)),cc)
 
     |(TransitionString(coords,s),Other) when c='\'' -> TerminalNoChar(coords,StringTerminal(s))

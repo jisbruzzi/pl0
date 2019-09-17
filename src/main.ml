@@ -20,7 +20,11 @@ let get_options ():options=
   end
 
 let pass_char (arg:'a Lazylist.gen_t)=arg
-let kill (arg:'a Lazylist.gen_t)=()
+let rec run_all (arg:'a Lazylist.gen_t)=
+  match(arg()) with 
+  |Empty->()
+  |Cons(t,lst)->run_all lst
+
 
 let compile (opt:options):unit = 
   try
@@ -32,13 +36,17 @@ let compile (opt:options):unit =
       |> ReadFile.add_coordinates
       |> Tokenize.run 
       |> (Verifier.run log_syntax)
-      |> (if print_tokens then TokenOps.print_tokens_coords else kill)
+      |> (if print_tokens then TokenOps.print_tokens_coords else pass_char)
+      |> run_all
     |[]->()
   with SyntaxError.SyntaxException (e,tc)->
-  print_string(
-    (SyntaxError.string_of_error e)^
-    (TokenOps.string_of_token_coords tc)^
-    "\n"
+  (
+    print_string(
+      (SyntaxError.string_of_error e)^
+      (TokenOps.string_of_token_coords tc)^
+      "\n"
+    );
+    exit 1
   ) 
   
 let () =

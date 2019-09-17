@@ -57,13 +57,14 @@ let rec print_tokens(tokens:token Lazylist.gen_t)=
     (print_char '\n');
     (print_tokens lst)
 
-let rec print_tokens_coords (tokens:TokenWithCoords.t Lazylist.gen_t) =
+let rec print_tokens_coords (tokens:TokenWithCoords.t Lazylist.gen_t):TokenWithCoords.t Lazylist.gen_t =
   match (tokens()) with
-  | Empty -> ()
-  | Cons(t,lst) -> 
+  | Empty -> (fun () ->Lazylist.Empty)
+  | Cons(t,lst) -> (
     (print_token_coords t);
     (print_char '\n');
-    (print_tokens_coords lst)
+    fun ()->(Lazylist.Cons(t,(print_tokens_coords lst)));
+  )
 
 let get_ident_or_keyword (s:string):token=
   match String.uppercase_ascii s with

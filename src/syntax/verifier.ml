@@ -4,18 +4,50 @@ let graph=SyntaxGraph.build
 
 let rec error (p:pattern)(t:Token.t):SyntaxError.t=
   let ok(p:pattern)(t:Token.t):bool = (error p t) = SyntaxError.NoError in
-  (match p with
-  | Maybe(p)-> if (ok p t) then SyntaxError.NoError else SyntaxError.NoMatch (* No importa si se cumple o no*)
-  | Sequence(p::tl) -> let e = (error p t) in if e==SyntaxError.NoMatch then (error (Sequence tl ) t) else e
-  | Sequence([]) -> SyntaxError.NoMatch
+  let error_with(p:pattern)(t:Token.t)(e:SyntaxError.t):SyntaxError.t = 
+  let rec add_alternative_error (e_base:SyntaxError.t)(e_added:SyntaxError.t)= 
+    (match e_base with
+      | SyntaxError.NoMatch(SyntaxError.NothingExpected) -> SyntaxError.NoMatch(SyntaxError.NothingExpected)
+      | SyntaxError.NoError -> SyntaxError.NoError
+      | SyntaxError.AlternativeErrors(lst)->SyntaxError.AlternativeErrors(e::lst)
+      | SyntaxError.NoMatch(e)->add_alternative_error e e_added
+      | err -> SyntaxError.AlternativeErrors([err])
+    ) in add_alternative_error (error p t) e
+  in
+
+  let ret = (match p with
+  | Maybe(p)-> if (ok p t) then SyntaxError.NoError else SyntaxError.NoMatch(error p t)
+  | Sequence(p::[]) -> (error p t)
+  | Sequence(p::tl) -> (
+    match (error p t) with
+    | SyntaxError.NoMatch(e) -> (error_with (Sequence tl ) t e)
+    | e -> e
+  ) 
+  | Sequence([]) -> SyntaxError.NoMatch(SyntaxError.NothingExpected)
   | Match(fm,fe,_)-> if (fm t) then SyntaxError.NoError else fe
-  | Asterisk(p)-> if (ok p t) then SyntaxError.NoError else SyntaxError.NoMatch
+  | Asterisk(p)-> if (ok p t) then SyntaxError.NoError else SyntaxError.NoMatch(error p t)
   | Or(p::[])->(error p t)
-  | Or(p::tl)->if (ok p t) then SyntaxError.NoError else let p=Pattern.Or(tl) in (error p t)
+  | Or(p::tl)->if (ok p t) then SyntaxError.NoError else let p_next=Pattern.Or(tl) in (error_with p_next t (error p t))
   | Or([])->SyntaxError.NoError 
   | In(p_fun,_)->(error (p_fun () ) t)
   | Nothing -> SyntaxError.NothingExpected
   | NoMatch -> SyntaxError.NothingExpected)
+
+  in (
+    (*
+    (print_string "\n =======");
+    (print_string "checking:");
+    (TokenOps.print_token t);
+    (print_string "\n =======");
+    (PatternOps.print_pattern p);
+    (print_string "\n =======");
+    (print_string "error:");
+    (print_string (SyntaxError.string_of_error ret));
+    (print_string "\n =======");
+    *)
+    ret
+    )
+
 
 let applies(p:pattern)(t:Token.t):bool= (error p t) = SyntaxError.NoError
 
@@ -32,6 +64,8 @@ let rec next (p:pattern)(t:Token.t):pattern=
       match (next p t) with 
       | NoMatch->  (next (Sequence(tl)) t)
       | Nothing->  Sequence(tl)
+      | Sequence(h::[]) -> Sequence(h::tl)
+      | Sequence(l)->Sequence(List.concat[l;tl])
       | n->Sequence(n::tl)
     )
   | Sequence([]) -> Pattern.Nothing
