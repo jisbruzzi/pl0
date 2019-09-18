@@ -32,12 +32,15 @@ let add_coordinates (c:char Lazylist.gen_t):CharWithCoords.t Lazylist.gen_t=
   let rec with_coord (line:int) (col:int) (c:char Lazylist.gen_t):CharWithCoords.t Lazylist.gen_t =
     match c () with
     | Cons('\n',lst)-> (fun () -> Lazylist.Cons(
-        (Coords.Coord(line,col),'\n'),
+        (Coords.Coord(line,col),Char('\n')),
         (with_coord (line + 1) 1 lst)
       ))
     | Cons(c,lst)-> (fun () -> Lazylist.Cons(
-        (Coords.Coord(line,col),c),
+        (Coords.Coord(line,col),Char(c)),
         (with_coord line (col + 1) lst)
       ))
-    | Empty -> (fun ()->Lazylist.Empty)
+    | Empty -> (fun ()->Lazylist.Cons(
+        (Coords.Coord(line,col),EndOfFile),
+        fun()->Lazylist.Empty
+      ))
   in with_coord 1 1 c

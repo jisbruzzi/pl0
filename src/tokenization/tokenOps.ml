@@ -39,6 +39,8 @@ let string_of_token (t:token)=
   | Write->"WRITE"
   | Odd->"ODD"
   | Distinct -> "DISTINCT"
+  | BadString(_)->"BAD_STRING"
+  | BadInteger(_)->"BAD INTEGER"
 
 let string_of_token_coords (tc:TokenWithCoords.t)=
   match tc with (Coords.Coord(line,col),t) -> 

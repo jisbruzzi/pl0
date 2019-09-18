@@ -34,20 +34,24 @@ let compile (opt:options):unit =
       |> ReadFile.read_lazy_file 
       |> (if log then ReadFile.log_lines_and_pass else pass_char)
       |> ReadFile.add_coordinates
-      |> Tokenize.run 
+      |> Tokenize.run
+      |> Tokenize.check
       |> (Verifier.run log_syntax)
       |> (if print_tokens then TokenOps.print_tokens_coords else pass_char)
       |> run_all
     |[]->()
-  with SyntaxError.SyntaxException (e,tc)->
-  (
+  with 
+  |SyntaxError.SyntaxException (e,tc)->(
     print_string(
       (SyntaxError.string_of_error e)^
       (TokenOps.string_of_token_coords tc)^
       "\n"
     );
     exit 1
-  ) 
+  )
+  |BadTokenException.BadTokenException(t)->
+    (print_string ((TokenOps.string_of_token_coords t)^"\n" ) )
+
   
 let () =
   get_options () |> compile

@@ -36,3 +36,5 @@ type t=
 |Write
 |Odd
 |Distinct
+|BadString of (char option)
+|BadInteger of string

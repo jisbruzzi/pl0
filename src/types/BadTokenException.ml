@@ -1,0 +1,1 @@
+exception BadTokenException of TokenWithCoords.t
