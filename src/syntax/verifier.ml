@@ -9,17 +9,24 @@ type syntax_match_result=
 |Matched
 |OptionalUnmatched of SyntaxError.t
 
-let rec match_sequence(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+let rec match_sequence_accumulating(lst:pattern list)(syntax_match:pattern->syntax_match_result)(errors:SyntaxError.t list):syntax_match_result=
   match lst with
-  | Sequence(l)::tl->match_sequence (List.concat [l;tl]) syntax_match
+  | Sequence(l)::tl->match_sequence_accumulating (List.concat [l;tl]) syntax_match errors
   | hd::[]->syntax_match hd
   | [] -> Error(SyntaxError.NothingExpected)
   | hd::tl->
     match syntax_match hd with
     | Next(p)->Next(Sequence(p::tl))
     | Matched-> Next(Sequence(tl))
-    | Error(e)->Error(e)
-    | OptionalUnmatched(e)->match_sequence tl  syntax_match
+    | Error(e)->(
+      match errors with 
+      |[]->Error(e)
+      |lst->Error(SyntaxError.AlternativeErrors(e::errors))
+    )
+    | OptionalUnmatched(e) -> match_sequence_accumulating tl  syntax_match (e::errors)
+
+let match_sequence(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+  match_sequence_accumulating lst syntax_match []
 
 let match_maybe(p:pattern)(syntax_match:pattern->syntax_match_result)=
   match (syntax_match p) with
@@ -32,15 +39,22 @@ let match_asterisk(p:pattern)(syntax_match:pattern->syntax_match_result)=
   | Next(next_pattern)->Next(Sequence([next_pattern;Asterisk(p)]))
   | e->e
 
-let rec match_or(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+let rec match_or_accumulating(lst:pattern list)(syntax_match:pattern->syntax_match_result)(errors:SyntaxError.t list):syntax_match_result=
   match lst with
-  | hd::[]->syntax_match hd
-  | [] ->Error(SyntaxError.NothingExpected)
-  | hd::tl-> 
+  | hd::[]->(
     match syntax_match hd with
-    | Next(p)->Next(p)
-    | Matched->Matched
-    | (Error(e)|OptionalUnmatched(e))->match_or tl syntax_match
+    | (Error(e)|OptionalUnmatched(e))->Error(SyntaxError.AlternativeErrors(e::errors))
+    | e->e
+  )
+  | [] ->Error(SyntaxError.NothingExpected)
+  | hd::tl-> (
+    match syntax_match hd with
+    | (Error(e)|OptionalUnmatched(e))->match_or_accumulating tl syntax_match (e::errors)
+    | e->e
+  )
+
+let match_or(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+  match_or_accumulating lst syntax_match []
 
 let rec syntax_match(p:pattern)(t:Token.t):syntax_match_result=
   let next_match=fun(p)->syntax_match p t in
