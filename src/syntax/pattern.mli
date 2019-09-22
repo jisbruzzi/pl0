@@ -7,3 +7,4 @@ type t =
 |Asterisk of t
 |Sequence of t list
 |Or of t list
+|Labeled of SyntaxLabel.t*t

@@ -90,19 +90,35 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
   ]))
 
 let rec block_fn (proposition:pattern) ():pattern = Sequence([
-  Maybe(Sequence([
+  Maybe(Labeled(SyntaxLabel.ConstantDeclarations,Sequence([
     m Token.Const;
-    m_ident;
+    Labeled(SyntaxLabel.ConstantName,m_ident);
     m Token.Equals;
-    m_integer;
-    Asterisk(Sequence([m Token.Comma;m_ident;m Token.Equals;m_integer]));
+    Labeled(SyntaxLabel.ConstantValue,m_integer);
+    Asterisk(Sequence([
+      m Token.Comma;
+      Labeled(SyntaxLabel.ConstantName,m_ident);
+      m Token.Equals;
+      Labeled(SyntaxLabel.ConstantValue,m_integer);
+    ]));
     m Token.Semicolon
-  ]));
-  Maybe(Sequence([
-    m Token.Var; m_ident;Asterisk(Sequence([m Token.Comma; m_ident]));m Token.Semicolon
-  ]));
+  ])));
+  Maybe(Labeled(SyntaxLabel.VariableDeclarations,Sequence([
+    m Token.Var; 
+    Labeled(SyntaxLabel.VariableName,m_ident);
+    Asterisk(Sequence([
+      m Token.Comma; 
+      Labeled(SyntaxLabel.VariableName,m_ident);
+    ]));
+    m Token.Semicolon
+  ])));
   Asterisk(Sequence([
-    m Token.Procedure; m_ident; m Token.Semicolon; In(block_fn proposition,"bloque"); m Token.Semicolon
+    Labeled(SyntaxLabel.ProcedureDeclaration,Sequence([
+      m Token.Procedure; 
+      Labeled(SyntaxLabel.ProcedureName,m_ident); 
+      m Token.Semicolon; 
+      Labeled(SyntaxLabel.ProcedureBlock,In(block_fn proposition,"bloque"))
+    ])); m Token.Semicolon
   ]));
   proposition
 ])

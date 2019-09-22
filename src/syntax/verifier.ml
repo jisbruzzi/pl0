@@ -1,12 +1,11 @@
 type pattern=Pattern.t
 
 let graph=SyntaxGraph.build
-type error_fn=pattern->Token.t->SyntaxError.t
 
 type syntax_match_result=
-|Next of pattern
+|Next of pattern*(SyntaxLabel.t list)
 |Error of SyntaxError.t
-|Matched
+|Matched of (SyntaxLabel.t list)
 |OptionalUnmatched of SyntaxError.t
 
 let rec match_sequence_accumulating(lst:pattern list)(syntax_match:pattern->syntax_match_result)(errors:SyntaxError.t list):syntax_match_result=
@@ -16,8 +15,8 @@ let rec match_sequence_accumulating(lst:pattern list)(syntax_match:pattern->synt
   | [] -> Error(SyntaxError.NothingExpected)
   | hd::tl->
     match syntax_match hd with
-    | Next(p)->Next(Sequence(p::tl))
-    | Matched-> Next(Sequence(tl))
+    | Next(p,labels)->Next(Sequence(p::tl),labels)
+    | Matched(labels)-> Next(Sequence(tl),labels)
     | Error(e)->(
       match errors with 
       |[]->Error(e)
@@ -36,7 +35,7 @@ let match_maybe(p:pattern)(syntax_match:pattern->syntax_match_result)=
 let match_asterisk(p:pattern)(syntax_match:pattern->syntax_match_result)=
   match syntax_match p with
   | Error(e)->OptionalUnmatched(e)
-  | Next(next_pattern)->Next(Sequence([next_pattern;Asterisk(p)]))
+  | Next(next_pattern,labels)->Next(Sequence([next_pattern;Asterisk(p)]),labels)
   | e->e
 
 let rec match_or_accumulating(lst:pattern list)(syntax_match:pattern->syntax_match_result)(errors:SyntaxError.t list):syntax_match_result=
@@ -53,18 +52,26 @@ let rec match_or_accumulating(lst:pattern list)(syntax_match:pattern->syntax_mat
     | e->e
   )
 
-let match_or(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+let match_or(lst:pattern list)(syntax_match:pattern->syntax_match_result):syntax_match_result=
   match_or_accumulating lst syntax_match []
+
+let make_labeled_result(p:pattern)(syntax_match:pattern->syntax_match_result)(lbl:SyntaxLabel.t):syntax_match_result=
+  match syntax_match p with
+  | Next(p,labels)->Next(p,lbl::labels)
+  | Matched(lst)->Matched(lbl::lst)
+  | o->o
+  
 
 let rec syntax_match(p:pattern)(t:Token.t):syntax_match_result=
   let next_match=fun(p)->syntax_match p t in
   match p with
   | In(pattern_generator,_)->next_match (pattern_generator ())
-  | Match(match_function,match_error,_)-> if match_function t then Matched else Error(match_error)
+  | Match(match_function,match_error,_)-> if match_function t then Matched([]) else Error(match_error)
   | Maybe(p) -> match_maybe p next_match
   | Asterisk(p) -> match_asterisk p next_match
   | Sequence(lst)->match_sequence lst next_match
   | Or(lst)->match_or lst next_match
+  | Labeled(lbl,p)->make_labeled_result p next_match lbl
 
 let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):TokenWithCoords.t Lazylist.gen_t =
   match tokens () with
@@ -78,7 +85,7 @@ let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):
         (print_string "-------\n")
       ));(
         match syntax_match tester token with
-        | Next(next_pattern) -> fun () -> Cons(token_coords,(run log lst next_pattern))
+        | Next(next_pattern,labels) -> fun () -> Cons(token_coords,(run log lst next_pattern))
         | Error(error) -> raise (SyntaxError.SyntaxException(error,token_coords))
         | e->(fun()->Empty)
       )

@@ -1,0 +1,1 @@
+val string_of_label:SyntaxLabel.t->string
