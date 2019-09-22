@@ -11,10 +11,10 @@ begin
      while B > 0 do
          begin
            if odd B then Z:= Z + A;
-           A := A * 2;3
+           A := A * 2;
            B := B / 2
          end;
-     if X < 0 then Z:= -Z;
+     if X ( 0 then Z:= -Z;
      if Y < 0 then Z:= -Z
 end;
 

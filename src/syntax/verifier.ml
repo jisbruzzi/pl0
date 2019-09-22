@@ -1,82 +1,56 @@
 type pattern=Pattern.t
 
 let graph=SyntaxGraph.build
+type error_fn=pattern->Token.t->SyntaxError.t
 
-let rec error (p:pattern)(t:Token.t):SyntaxError.t=
-  let ok(p:pattern)(t:Token.t):bool = (error p t) = SyntaxError.NoError in
-  let error_with(p:pattern)(t:Token.t)(e:SyntaxError.t):SyntaxError.t = 
-  let rec add_alternative_error (e_base:SyntaxError.t)(e_added:SyntaxError.t)= 
-    (match e_base with
-      | SyntaxError.NoMatch(SyntaxError.NothingExpected) -> SyntaxError.NoMatch(SyntaxError.NothingExpected)
-      | SyntaxError.NoError -> SyntaxError.NoError
-      | SyntaxError.AlternativeErrors(lst)->SyntaxError.AlternativeErrors(e::lst)
-      | SyntaxError.NoMatch(e)->add_alternative_error e e_added
-      | err -> SyntaxError.AlternativeErrors([err])
-    ) in add_alternative_error (error p t) e
-  in
+type syntax_match_result=
+|Next of pattern
+|Error of SyntaxError.t
+|Matched
+|OptionalUnmatched of SyntaxError.t
 
-  let ret = (match p with
-  | Maybe(p)-> if (ok p t) then SyntaxError.NoError else SyntaxError.NoMatch(error p t)
-  | Sequence(p::[]) -> (error p t)
-  | Sequence(p::tl) -> (
-    match (error p t) with
-    | SyntaxError.NoMatch(e) -> (error_with (Sequence tl ) t e)
-    | e -> e
-  ) 
-  | Sequence([]) -> SyntaxError.NoMatch(SyntaxError.NothingExpected)
-  | Match(fm,fe,_)-> if (fm t) then SyntaxError.NoError else fe
-  | Asterisk(p)-> if (ok p t) then SyntaxError.NoError else SyntaxError.NoMatch(error p t)
-  | Or(p::[])->(error p t)
-  | Or(p::tl)->if (ok p t) then SyntaxError.NoError else let p_next=Pattern.Or(tl) in (error_with p_next t (error p t))
-  | Or([])->SyntaxError.NoError 
-  | In(p_fun,_)->(error (p_fun () ) t)
-  | Nothing -> SyntaxError.NothingExpected
-  | NoMatch -> SyntaxError.NothingExpected)
+let rec match_sequence(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+  match lst with
+  | Sequence(l)::tl->match_sequence (List.concat [l;tl]) syntax_match
+  | hd::[]->syntax_match hd
+  | [] -> Error(SyntaxError.NothingExpected)
+  | hd::tl->
+    match syntax_match hd with
+    | Next(p)->Next(Sequence(p::tl))
+    | Matched-> Next(Sequence(tl))
+    | Error(e)->Error(e)
+    | OptionalUnmatched(e)->match_sequence tl  syntax_match
 
-  in (
-    (*
-    (print_string "\n =======");
-    (print_string "checking:");
-    (TokenOps.print_token t);
-    (print_string "\n =======");
-    (PatternOps.print_pattern p);
-    (print_string "\n =======");
-    (print_string "error:");
-    (print_string (SyntaxError.string_of_error ret));
-    (print_string "\n =======");
-    *)
-    ret
-    )
+let match_maybe(p:pattern)(syntax_match:pattern->syntax_match_result)=
+  match (syntax_match p) with
+  | Error(e)->OptionalUnmatched(e)
+  | result->result
 
+let match_asterisk(p:pattern)(syntax_match:pattern->syntax_match_result)=
+  match syntax_match p with
+  | Error(e)->OptionalUnmatched(e)
+  | Next(next_pattern)->Next(Sequence([next_pattern;Asterisk(p)]))
+  | e->e
 
-let applies(p:pattern)(t:Token.t):bool= (error p t) = SyntaxError.NoError
+let rec match_or(lst:pattern list)(syntax_match:pattern->syntax_match_result)=
+  match lst with
+  | hd::[]->syntax_match hd
+  | [] ->Error(SyntaxError.NothingExpected)
+  | hd::tl-> 
+    match syntax_match hd with
+    | Next(p)->Next(p)
+    | Matched->Matched
+    | (Error(e)|OptionalUnmatched(e))->match_or tl syntax_match
 
-let rec next (p:pattern)(t:Token.t):pattern=
+let rec syntax_match(p:pattern)(t:Token.t):syntax_match_result=
+  let next_match=fun(p)->syntax_match p t in
   match p with
-  | Maybe(p)-> if (applies p t) then (next p t) else Pattern.NoMatch
-  | Sequence(p::[]) -> (
-      match (next p t) with 
-      | NoMatch->  NoMatch
-      | Nothing->  Nothing
-      | n->Sequence(n::[])
-    )
-  | Sequence(p::tl) -> (
-      match (next p t) with 
-      | NoMatch->  (next (Sequence(tl)) t)
-      | Nothing->  Sequence(tl)
-      | Sequence(h::[]) -> Sequence(h::tl)
-      | Sequence(l)->Sequence(List.concat[l;tl])
-      | n->Sequence(n::tl)
-    )
-  | Sequence([]) -> Pattern.Nothing
-  | Match(_)->Pattern.Nothing
-  | Asterisk(p)->if (applies p t) then Sequence([(next p t);Asterisk(p)]) else Pattern.NoMatch
-  | Or(p::tl)-> if (applies p t) then (next p t) else (next (Pattern.Or(tl)) t)
-  | Or([])->Pattern.Nothing
-  | In(p_fun,_)-> (next (p_fun ()) t)
-  | Nothing -> Pattern.Nothing
-  | NoMatch -> Pattern.NoMatch
-  
+  | In(pattern_generator,_)->next_match (pattern_generator ())
+  | Match(match_function,match_error,_)-> if match_function t then Matched else Error(match_error)
+  | Maybe(p) -> match_maybe p next_match
+  | Asterisk(p) -> match_asterisk p next_match
+  | Sequence(lst)->match_sequence lst next_match
+  | Or(lst)->match_or lst next_match
 
 let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):TokenWithCoords.t Lazylist.gen_t =
   match tokens () with
@@ -88,10 +62,12 @@ let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):
         (print_string "--WITH TOKEN:--");
         (TokenOps.print_token token);
         (print_string "-------\n")
-      ));
-      if (( error tester token ) = SyntaxError.NoError) 
-      then fun () -> Cons(token_coords,(run log lst (next tester token)))
-      else raise (SyntaxError.SyntaxException((error tester token),token_coords))
+      ));(
+        match syntax_match tester token with
+        | Next(next_pattern) -> fun () -> Cons(token_coords,(run log lst next_pattern))
+        | Error(error) -> raise (SyntaxError.SyntaxException(error,token_coords))
+        | e->(fun()->Empty)
+      )
   | Empty -> (fun () -> Lazylist.Empty)
 
 
