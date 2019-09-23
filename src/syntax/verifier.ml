@@ -57,7 +57,7 @@ let match_or(lst:pattern list)(syntax_match:pattern->syntax_match_result):syntax
 
 let make_labeled_result(p:pattern)(syntax_match:pattern->syntax_match_result)(lbl:SyntaxLabel.t):syntax_match_result=
   match syntax_match p with
-  | Next(p,labels)->Next(p,lbl::labels)
+  | Next(p,labels)->Next(Labeled(lbl,p),lbl::labels)
   | Matched(lst)->Matched(lbl::lst)
   | o->o
   
@@ -73,7 +73,7 @@ let rec syntax_match(p:pattern)(t:Token.t):syntax_match_result=
   | Or(lst)->match_or lst next_match
   | Labeled(lbl,p)->make_labeled_result p next_match lbl
 
-let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):TokenWithCoords.t Lazylist.gen_t =
+let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):TokenWithLabels.t Lazylist.gen_t =
   match tokens () with
   |Cons(token_coords,lst)->
     let (_,token)=token_coords in
@@ -85,12 +85,11 @@ let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):
         (print_string "-------\n")
       ));(
         match syntax_match tester token with
-        | Next(next_pattern,labels) -> fun () -> Cons(token_coords,(run log lst next_pattern))
+        | Next(next_pattern,labels) -> fun () -> Cons((labels,token_coords),(run log lst next_pattern))
         | Error(error) -> raise (SyntaxError.SyntaxException(error,token_coords))
         | e->(fun()->Empty)
       )
   | Empty -> (fun () -> Lazylist.Empty)
 
-
-let run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t):TokenWithCoords.t Lazylist.gen_t =
+let run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t):TokenWithLabels.t Lazylist.gen_t =
   run log tokens (graph ())
