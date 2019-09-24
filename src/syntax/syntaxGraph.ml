@@ -18,7 +18,10 @@ let m_string = Pattern.Match(match_string,SyntaxError.StringExpected,"string")
 let match_integer t=match t with Token.Integer(_)->true | _->false
 let m_integer=Pattern.Match(match_integer,SyntaxError.IntegerExpected,"entero")
 
-let factor_fn (expression:pattern) ():pattern = Or([m_ident;m_integer;Sequence([
+let factor_fn (expression:pattern) ():pattern = Or([
+  Labeled(SyntaxLabel.ConstOrVarRead,m_ident);
+  m_integer;
+  Sequence([
   m Token.OpenParenthesis; expression;m Token.ClosedParenthesis
 ])])
 
@@ -32,11 +35,11 @@ let rec expresion_fn ():pattern =
   let factor_generator:pattern_gen=factor_fn expresion in
   let factor=In(factor_generator,"factor") in
   let term=In(term_fn factor,"termino") in 
-  Sequence([
+  Labeled(SyntaxLabel.Expression,Sequence([
     Maybe(Or([m Token.Plus; m Token.Minus]));
     term;
     Asterisk(Sequence([Or([m Token.Minus;m Token.Plus]);term]))
-  ])
+  ]))
 
 let condition_fn (expression:pattern) ():pattern = Or([
   Sequence([m Token.Odd;expression]);
@@ -56,9 +59,9 @@ let condition_fn (expression:pattern) ():pattern = Or([
 
 let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
   let proposition=In(proposition_fn condition expression,"proposicion") in 
-  Maybe(Or([  
-    Sequence([m_ident;m Token.Assignation;expression]);
-    Sequence([m Token.Call; m_ident]);
+  Labeled(SyntaxLabel.Proposition,Maybe(Or([  
+    Sequence([Labeled(SyntaxLabel.VariableAssign,m_ident);m Token.Assignation;expression]);
+    Sequence([m Token.Call; Labeled(SyntaxLabel.ProcedureNameCall,m_ident)]);
     (Sequence([m Token.Begin;proposition;Asterisk(Sequence([m Token.Semicolon; proposition]));m Token.End]));
     (Sequence([m Token.If;condition;m Token.Then;proposition]));
     (Sequence([m Token.While;condition;m Token.Do;proposition]));
@@ -83,47 +86,50 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
       m Token.Readln;
       m Token.OpenParenthesis;
       m_ident;
-      Asterisk(Sequence([m Token.Comma;m_ident]));
+      Asterisk(Sequence([m Token.Comma;Labeled(SyntaxLabel.VariableAssignFromReadln,m_ident)]));
       m Token.ClosedParenthesis
     ]));
 
-  ]))
+  ])))
 
-let rec block_fn (proposition:pattern) ():pattern = Sequence([
-  Maybe(Labeled(SyntaxLabel.ConstantDeclarations,Sequence([
+let rec block_fn (proposition:pattern) ():pattern = Labeled(SyntaxLabel.Block,Sequence([
+  Maybe(Sequence([
     m Token.Const;
-    Labeled(SyntaxLabel.ConstantName,m_ident);
+    Labeled(SyntaxLabel.ConstantDeclaration,m_ident);
     m Token.Equals;
     Labeled(SyntaxLabel.ConstantValue,m_integer);
     Asterisk(Sequence([
       m Token.Comma;
-      Labeled(SyntaxLabel.ConstantName,m_ident);
+      Labeled(SyntaxLabel.ConstantDeclaration,m_ident);
       m Token.Equals;
       Labeled(SyntaxLabel.ConstantValue,m_integer);
     ]));
     m Token.Semicolon
-  ])));
-  Maybe(Labeled(SyntaxLabel.VariableDeclarations,Sequence([
+  ]));
+  Maybe(Sequence([
     m Token.Var; 
-    Labeled(SyntaxLabel.VariableName,m_ident);
+    Labeled(SyntaxLabel.VariableDeclaration,m_ident);
     Asterisk(Sequence([
       m Token.Comma; 
-      Labeled(SyntaxLabel.VariableName,m_ident);
+      Labeled(SyntaxLabel.VariableDeclaration,m_ident);
     ]));
     m Token.Semicolon
-  ])));
+  ]));
   Asterisk(Sequence([
     Labeled(SyntaxLabel.ProcedureDeclaration,Sequence([
       m Token.Procedure; 
-      Labeled(SyntaxLabel.ProcedureName,m_ident); 
+      Labeled(SyntaxLabel.ProcedureNameDeclaration,m_ident); 
       m Token.Semicolon; 
-      Labeled(SyntaxLabel.ProcedureBlock,In(block_fn proposition,"bloque"))
+      In(block_fn proposition,"bloque")
     ])); m Token.Semicolon
   ]));
   proposition
-])
+]))
 
-let program_fn (block:pattern)():pattern = Sequence( [ block; m Token.Point;m Token.EndOfFileToken ] )
+let program_fn (block:pattern)():pattern = 
+Labeled(SyntaxLabel.ProgramRoot,
+  Sequence( [ block; m Token.Point;m Token.EndOfFileToken ] )
+)
 
 let build ():pattern =
   let expression = In(expresion_fn,"expresion") in

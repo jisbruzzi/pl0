@@ -1,9 +1,16 @@
 type t=
 |ConstantDeclarations
-|ConstantName
+|ConstantDeclaration
 |ConstantValue
 |VariableDeclarations
-|VariableName
+|VariableDeclaration
 |ProcedureDeclaration
-|ProcedureName
-|ProcedureBlock
+|ProgramRoot
+|Block
+|Proposition
+|Expression
+|VariableAssign
+|ConstOrVarRead
+|VariableAssignFromReadln
+|ProcedureNameDeclaration
+|ProcedureNameCall
