@@ -1,6 +1,5 @@
 type t=
-|ConstantDeclarations
-|ConstantDeclaration
+|ConstantNameDeclaration
 |ConstantValue
 |VariableDeclarations
 |VariableDeclaration
@@ -14,3 +13,7 @@ type t=
 |VariableAssignFromReadln
 |ProcedureNameDeclaration
 |ProcedureNameCall
+|Term
+|AssignationProposition
+|IfProposition
+|WhileProposition

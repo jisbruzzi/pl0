@@ -12,4 +12,8 @@ clean:
 	ocamlbuild -lib str -use-ocamlfind $@
 	mv $@ $*
 
+%.byte: 
+	ocamlbuild -lib str -use-ocamlfind $@
+	mv $@ $*
+
 .PHONY: test default

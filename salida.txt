@@ -1,7 +1,20 @@
-1:CONST hola = 5, bueno = 8;
-1:VAR que, bien, hola, pl0;
-2:PROCEDURE proc:
-3:    VAR p = 5, cadena="hola, soy una cadena", q=5*(p+8);
-4:
-5:;
-6:CALL proc.
+1:VAR BASE, EXPO, RESU;
+1:
+2:PROCEDURE POT;
+3:IF EXPO > 0 THEN
+4:   BEGIN
+5:        RESU := RESU * BASE;
+6:        EXPO := EXPO - 1;
+7:        CALL POT
+8:   END;
+9:
+10:BEGIN
+11:     WRITE ('BASE: '); READLN(BASE);
+12:     WRITE ('EXPONENTE: '); READLN(EXPO);
+13:     RESU := 1;
+14:     CALL POT;
+15:     IF EXPO < 0 THEN RESU := 0;
+16:     WRITELN ('RESULTADO: ', RESU);
+17:     WRITELN
+18:END.
+19:

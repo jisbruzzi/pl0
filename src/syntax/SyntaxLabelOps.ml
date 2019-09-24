@@ -1,7 +1,5 @@
 let string_of_label(l:SyntaxLabel.t)=
   match l with
-  |ConstantDeclarations->"ConstantDeclarations"
-  |ConstantDeclaration->"ConstantDeclaration"
   |ConstantValue->"ConstantValue"
   |VariableDeclarations->"VariableDeclarations"
   |VariableDeclaration->"VariableDeclaration"
@@ -15,3 +13,8 @@ let string_of_label(l:SyntaxLabel.t)=
   |VariableAssignFromReadln->"VariableAssignFromReadln"
   |ProcedureNameDeclaration->"ProcedureNameDeclaration"
   |ProcedureNameCall->"ProcedureNameCall"
+  |ConstantNameDeclaration->"ConstantNameDeclaration"
+  |Term->"Term"
+  |AssignationProposition->"AssignationProposition"
+  |IfProposition->"IfProposition"
+  |WhileProposition->"WhileProposition"

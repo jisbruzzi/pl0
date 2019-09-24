@@ -14,5 +14,5 @@ let rec print_lazylist(input:TokenWithLabels.t Lazylist.gen_t):TokenWithLabels.t
   | Empty->input
   | Cons(hd,gen)->(
     print_token_with_label hd;
-    print_lazylist gen
+    fun()->Cons(hd,print_lazylist gen)
   )

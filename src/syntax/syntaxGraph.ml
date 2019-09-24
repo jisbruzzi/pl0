@@ -25,10 +25,10 @@ let factor_fn (expression:pattern) ():pattern = Or([
   m Token.OpenParenthesis; expression;m Token.ClosedParenthesis
 ])])
 
-let term_fn (factor:pattern) ():pattern=Sequence([
+let term_fn (factor:pattern) ():pattern=Labeled(SyntaxLabel.Term,Sequence([
   factor;
   Asterisk(Sequence([Or([m Token.Times;m Token.Divide]); factor]))
-])
+]))
 
 let rec expresion_fn ():pattern = 
   let expresion:pattern=In(expresion_fn,"expresion") in
@@ -60,11 +60,13 @@ let condition_fn (expression:pattern) ():pattern = Or([
 let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
   let proposition=In(proposition_fn condition expression,"proposicion") in 
   Labeled(SyntaxLabel.Proposition,Maybe(Or([  
-    Sequence([Labeled(SyntaxLabel.VariableAssign,m_ident);m Token.Assignation;expression]);
+    Labeled(SyntaxLabel.AssignationProposition,Sequence([
+      Labeled(SyntaxLabel.VariableAssign,m_ident);m Token.Assignation;expression
+    ]));
     Sequence([m Token.Call; Labeled(SyntaxLabel.ProcedureNameCall,m_ident)]);
     (Sequence([m Token.Begin;proposition;Asterisk(Sequence([m Token.Semicolon; proposition]));m Token.End]));
-    (Sequence([m Token.If;condition;m Token.Then;proposition]));
-    (Sequence([m Token.While;condition;m Token.Do;proposition]));
+    Labeled(SyntaxLabel.IfProposition,(Sequence([m Token.If;condition;m Token.Then;proposition])));
+    Labeled(SyntaxLabel.WhileProposition,Sequence([m Token.While;condition;m Token.Do;proposition]));
     (Sequence([m Token.Writeln;Maybe(Sequence([
       m Token.OpenParenthesis; 
       Or([m_string;expression]);
@@ -95,12 +97,12 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
 let rec block_fn (proposition:pattern) ():pattern = Labeled(SyntaxLabel.Block,Sequence([
   Maybe(Sequence([
     m Token.Const;
-    Labeled(SyntaxLabel.ConstantDeclaration,m_ident);
+    Labeled(SyntaxLabel.ConstantNameDeclaration,m_ident);
     m Token.Equals;
     Labeled(SyntaxLabel.ConstantValue,m_integer);
     Asterisk(Sequence([
       m Token.Comma;
-      Labeled(SyntaxLabel.ConstantDeclaration,m_ident);
+      Labeled(SyntaxLabel.ConstantNameDeclaration,m_ident);
       m Token.Equals;
       Labeled(SyntaxLabel.ConstantValue,m_integer);
     ]));

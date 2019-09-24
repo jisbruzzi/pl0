@@ -14,7 +14,7 @@ begin
            A := A * 2;
            B := B / 2
          end;
-     if X ( 0 then Z:= -Z;
+     if X * 0 >2 then Z:= -Z;
      if Y < 0 then Z:= -Z
 end;
 
