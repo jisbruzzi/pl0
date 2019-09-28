@@ -1,0 +1,15 @@
+let string_of_operation(op:Operation.t):string=
+  match op with
+  |NegateOperation->"NegateOperation"
+  |PlusOperation->"PlusOperation"
+  |MinusOperation->"MinusOperation"
+  |TimesOperation->"TimesOperation"
+  |DivideOperation->"DivideOperation"
+  |NoOperation->"NoOperation"
+  |LessOrEqualCheck->"LessOrEqualCheck"
+  |LessCheck->"LessCheck"
+  |EqualsCheck->"EqualsCheck"
+  |DistinctCheck->"DistinctCheck"
+  |OddCheck->"OddCheck"
+  |GreaterOrEqualCheck->"GreaterOrEqualCheck"
+  |GreaterCheck->"GreaterCheck"

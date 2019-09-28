@@ -45,17 +45,17 @@ let rec expresion_fn ():pattern =
   ]))
 
 let condition_fn (expression:pattern) ():pattern = Or([
-  Sequence([m Token.Odd;expression]);
+  Sequence([Labeled(SyntaxLabel.Comparator,m Token.Odd);expression]);
   Sequence([
     expression;
-    Or([
+    Labeled(SyntaxLabel.Comparator,Or([
       m Token.Equals;
       m Token.Distinct;
       m Token.Less;
       m Token.LessOrEqual;
       m Token.Greater;
       m Token.GreaterOrEqual
-    ]);
+    ]));
     expression;
   ])
 ])

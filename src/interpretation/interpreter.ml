@@ -153,6 +153,14 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
     | (_,TermOperation::[],Plus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.PlusOperation )
     | (_,TermOperation::[],Minus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.MinusOperation )
     | (_,Negation::[],Minus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.NegateOperation )
+    | (_,Comparator::[],GreaterOrEqual)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.GreaterOrEqualCheck)
+    | (_,Comparator::[],Greater)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.GreaterCheck)
+    | (_,Comparator::[],LessOrEqual)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.LessOrEqualCheck)
+    | (_,Comparator::[],Less)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.LessCheck)
+    | (_,Comparator::[],Equals)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.EqualsCheck)
+    | (_,Comparator::[],Distinct)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.DistinctCheck)
+    | (_,Comparator::[],Odd)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.OddCheck)
+
 
 
     (* catch-all *)
