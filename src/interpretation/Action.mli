@@ -12,3 +12,5 @@ type t=
 |EndIfBlock
 |WriteVariableFromInput of string
 |EndWhileBlock
+|IntegerRead of string
+|Operate of Operation.t

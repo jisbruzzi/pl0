@@ -17,3 +17,8 @@ type t=
 |AssignationProposition
 |IfProposition
 |WhileProposition
+|Factor
+|LiteralInteger
+|Negation
+|FactorOperation
+|TermOperation

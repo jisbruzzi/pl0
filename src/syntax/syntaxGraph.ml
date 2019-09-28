@@ -18,16 +18,19 @@ let m_string = Pattern.Match(match_string,SyntaxError.StringExpected,"string")
 let match_integer t=match t with Token.Integer(_)->true | _->false
 let m_integer=Pattern.Match(match_integer,SyntaxError.IntegerExpected,"entero")
 
-let factor_fn (expression:pattern) ():pattern = Or([
+let factor_fn (expression:pattern) ():pattern = Labeled(SyntaxLabel.Factor,Or([
   Labeled(SyntaxLabel.ConstOrVarRead,m_ident);
-  m_integer;
+  Labeled(SyntaxLabel.LiteralInteger,m_integer);
   Sequence([
   m Token.OpenParenthesis; expression;m Token.ClosedParenthesis
-])])
+])]))
 
 let term_fn (factor:pattern) ():pattern=Labeled(SyntaxLabel.Term,Sequence([
   factor;
-  Asterisk(Sequence([Or([m Token.Times;m Token.Divide]); factor]))
+  Asterisk(Sequence([
+    Labeled(SyntaxLabel.FactorOperation,Or([m Token.Times;m Token.Divide])); 
+    factor
+  ]))
 ]))
 
 let rec expresion_fn ():pattern = 
@@ -36,9 +39,9 @@ let rec expresion_fn ():pattern =
   let factor=In(factor_generator,"factor") in
   let term=In(term_fn factor,"termino") in 
   Labeled(SyntaxLabel.Expression,Sequence([
-    Maybe(Or([m Token.Plus; m Token.Minus]));
+    Maybe(Or([m Token.Plus; Labeled(SyntaxLabel.Negation,m Token.Minus)]));
     term;
-    Asterisk(Sequence([Or([m Token.Minus;m Token.Plus]);term]))
+    Asterisk(Sequence([Labeled(SyntaxLabel.TermOperation,Or([m Token.Minus;m Token.Plus]));term]))
   ]))
 
 let condition_fn (expression:pattern) ():pattern = Or([

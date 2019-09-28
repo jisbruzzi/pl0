@@ -18,3 +18,8 @@ let string_of_label(l:SyntaxLabel.t)=
   |AssignationProposition->"AssignationProposition"
   |IfProposition->"IfProposition"
   |WhileProposition->"WhileProposition"
+  |Factor->"Factor"
+  |LiteralInteger->"LiteralInteger"
+  |Negation->"Negation"
+  |FactorOperation->"FactorOperation2"
+  |TermOperation->"TermOperation"

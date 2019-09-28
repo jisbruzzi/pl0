@@ -3,11 +3,13 @@ type context_explainer=
 |ProcedureContext
 |ConstantDeclarationContext of string
 |PropositionContext
-|ExpressionContext
-|TermContext
+|ExpressionContext of Operation.t
+|TermContext  of Operation.t
 |AssignationContext of string
 |IfContext
 |WhileContext
+|FactorContext of Operation.t
+|OperateAfterNextContext of Operation.t
 
 type interpreter_state=
 |BeginProgram
@@ -21,10 +23,13 @@ let state_with_context (s:interpreter_state)(c:context_explainer):interpreter_st
   |ContextStack(clst)->ContextStack(c::clst)
 
 let state_with_action  (s:interpreter_state)(a:Action.t):interpreter_state=
-  match s with
-  |BeginProgram->BeginProgram
-  |Terminal(alst,clst)->Terminal(List.rev (a:: List.rev alst),clst)
-  |ContextStack(clst)->Terminal(a::[],clst)
+  match a with
+  |Operate(Operation.NoOperation)->s
+  |_->
+    match s with
+    |BeginProgram->BeginProgram
+    |Terminal(alst,clst)->Terminal(List.rev (a:: List.rev alst),clst)
+    |ContextStack(clst)->Terminal(a::[],clst)
 
 let string_of_action(a:Action.t)=
   match a with
@@ -41,6 +46,8 @@ let string_of_action(a:Action.t)=
   |EndIfBlock->"EndIfBlock"
   |EndWhileBlock->"EndWhileBlock"
   |WriteVariableFromInput (s)->"WriteVariableFromInput "^s
+  |IntegerRead(s)->"IntegerRead "^s
+  |Operate(op)-> "Operate "
   
 
 let string_of_context(c:context_explainer)=
@@ -49,11 +56,13 @@ let string_of_context(c:context_explainer)=
   |ProcedureContext->"ProcedureContext"
   |ConstantDeclarationContext(name)->"ConstantDeclarationContext "^name
   |PropositionContext->"PropositionContext"
-  |ExpressionContext->"ExpressionContext"
-  |TermContext->"TermContext"
+  |ExpressionContext(op)->"ExpressionContext"
+  |TermContext(op)->"TermContext"
+  |FactorContext(op)->"FactorContext"
   |AssignationContext(name)->"AssignationContext "^name
   |IfContext->"IfContext"
   |WhileContext->"WhileContext"
+  |OperateAfterNextContext(op) -> "OperateAfterNextContext"
 
 let string_of_interpreter_state(s:interpreter_state):string=
   match s with
@@ -89,18 +98,27 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
 
     | (ConstantDeclarationContext(name)::context_list,ConstantValue::[],Integer(value))->Terminal([DeclareConstant(name,value)],[])
 
-    (* saltear proposition,expression y term, ya veré qué se hace con esos*)
+    (* saltear proposition,expression, term y factor, ya veré qué se hace con esos*)
     | (PropositionContext::context_list,Proposition::labels,_)->state_with_context (ns context_list labels) PropositionContext
     | (context_list,Proposition::labels,_)->state_with_context (ns context_list labels) PropositionContext
     | (PropositionContext::context_list,labels,_)-> (ns context_list labels)
 
-    | (ExpressionContext::context_list,Expression::labels,_)->state_with_context (ns context_list labels) ExpressionContext
-    | (context_list,Expression::labels,_)->state_with_context (ns context_list labels) ExpressionContext
-    | (ExpressionContext::context_list,labels,_)-> (ns context_list labels)
+    | (ExpressionContext(op)::context_list,Expression::labels,_)->state_with_context (ns context_list labels) (ExpressionContext op)
+    | (OperateAfterNextContext(op)::context_list,Expression::labels,_)->state_with_context (ns context_list labels) (ExpressionContext op)
+    | (context_list,Expression::labels,_)->state_with_context (ns context_list labels) (ExpressionContext Operation.NoOperation)
+    | (ExpressionContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
 
-    | (TermContext::context_list,Term::labels,_)->state_with_context (ns context_list labels) TermContext
-    | (context_list,Term::labels,_)->state_with_context (ns context_list labels) TermContext
-    | (TermContext::context_list,labels,_)-> (ns context_list labels)
+    | (TermContext(op)::context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext op)
+    | (OperateAfterNextContext(op)::context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext op)
+    | (context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext Operation.NoOperation)
+    | (TermContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
+
+
+    | (FactorContext(op)::context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext op)
+    | (OperateAfterNextContext(op)::context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext op)
+    | (context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext Operation.NoOperation)
+    | (FactorContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
+    
     
     (* contexto de asignacion *)
     | (context_list,AssignationProposition::VariableAssign::[],Ident(name))->state_with_context (ns context_list []) (AssignationContext name)
@@ -128,6 +146,14 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
     | (_,ProcedureNameCall::[],Ident(s))->Terminal([CallProcedure(s)],[])
     | (_,ConstOrVarRead::[],Ident(s))->Terminal([ReadVariableOrConstant(s)],[])
     | (_,VariableAssignFromReadln::[],Ident(s))->Terminal([WriteVariableFromInput(s)],[])
+    | (_,LiteralInteger::[],Integer(s))->Terminal([IntegerRead(s)],[])
+
+    | (_,FactorOperation::[],Times)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.TimesOperation )
+    | (_,FactorOperation::[],Divide)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.DivideOperation )
+    | (_,TermOperation::[],Plus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.PlusOperation )
+    | (_,TermOperation::[],Minus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.MinusOperation )
+    | (_,Negation::[],Minus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.NegateOperation )
+
 
     (* catch-all *)
     | (contexts,labels,token)->ContextStack(contexts)
