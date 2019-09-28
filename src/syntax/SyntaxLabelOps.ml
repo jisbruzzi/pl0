@@ -23,3 +23,6 @@ let string_of_label(l:SyntaxLabel.t)=
   |Negation->"Negation"
   |FactorOperation->"FactorOperation2"
   |TermOperation->"TermOperation"
+  |Comparator->"Comparator"
+  |WriteLineProposition->"WriteLineProposition"
+  |WriteExpression->"WriteExpression"

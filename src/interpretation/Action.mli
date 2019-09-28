@@ -14,3 +14,6 @@ type t=
 |EndWhileBlock
 |IntegerRead of string
 |Operate of Operation.t
+|PrintNewline
+|PrintString of string
+|PrintResult

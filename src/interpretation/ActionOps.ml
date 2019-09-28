@@ -15,6 +15,9 @@ let string_of_action(a:Action.t):string=
   |WriteVariableFromInput(s)->"WriteVariableFromInput "^s
   |IntegerRead(s)->"IntegerRead "^s
   |Operate(op)->"Operate " ^ (OperationOps.string_of_operation op)
+  |PrintNewline->"PrintNewline"
+  |PrintResult->"PrintResult"
+  |PrintString(s)->"PrintString"^s
 
 let rec print_lazylist(a:Action.t Lazylist.gen_t):Action.t Lazylist.gen_t=
   match a () with

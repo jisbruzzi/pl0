@@ -10,6 +10,8 @@ type context_explainer=
 |WhileContext
 |FactorContext of Operation.t
 |OperateAfterNextContext of Operation.t
+|WriteLineContext
+|WriteExpressionContext
 
 type interpreter_state=
 |BeginProgram
@@ -48,6 +50,9 @@ let string_of_action(a:Action.t)=
   |WriteVariableFromInput (s)->"WriteVariableFromInput "^s
   |IntegerRead(s)->"IntegerRead "^s
   |Operate(op)-> "Operate "
+  |PrintNewline->"PrintNewline"
+  |PrintResult->"PrintResult"
+  |PrintString(s)->"PrintString "^s
   
 
 let string_of_context(c:context_explainer)=
@@ -63,6 +68,8 @@ let string_of_context(c:context_explainer)=
   |IfContext->"IfContext"
   |WhileContext->"WhileContext"
   |OperateAfterNextContext(op) -> "OperateAfterNextContext"
+  |WriteLineContext->"WriteLineContext"
+  |WriteExpressionContext->"WriteExpressionContext"
 
 let string_of_interpreter_state(s:interpreter_state):string=
   match s with
@@ -113,6 +120,19 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
     | (context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext Operation.NoOperation)
     | (TermContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
 
+    (* WriteLineProposition *)
+
+    | (WriteLineContext::context_list,WriteLineProposition::labels,_)->state_with_context (ns context_list labels) WriteLineContext
+    | (context_list,WriteLineProposition::labels,_)->state_with_context (ns context_list labels) WriteLineContext
+    | (WriteLineContext::context_list,labels,_)-> state_with_action (ns context_list labels) PrintNewline
+
+    | (_,WriteExpression::[],StringTerminal(s))->Terminal([PrintString(s)],[])
+    | (WriteExpressionContext::context_list,WriteExpression::labels,_)->state_with_context (ns context_list labels) WriteExpressionContext
+    | (context_list,WriteExpression::labels,_)->state_with_context (ns context_list labels) WriteExpressionContext
+    | (WriteExpressionContext::context_list,labels,_)-> state_with_action (ns context_list labels) PrintResult
+
+    
+
 
     | (FactorContext(op)::context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext op)
     | (OperateAfterNextContext(op)::context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext op)
@@ -138,6 +158,7 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
     | (WhileContext::context_list,labels,_)->state_with_action (ns context_list labels) EndWhileBlock
     | (context_list,WhileProposition::labels,_)->state_with_context (ns context_list labels) WhileContext
 
+
     
 
     (* insertar acciones de declaración y uso de variables,constantes, procedures  *)
@@ -147,6 +168,8 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
     | (_,ConstOrVarRead::[],Ident(s))->Terminal([ReadVariableOrConstant(s)],[])
     | (_,VariableAssignFromReadln::[],Ident(s))->Terminal([WriteVariableFromInput(s)],[])
     | (_,LiteralInteger::[],Integer(s))->Terminal([IntegerRead(s)],[])
+    
+    
 
     | (_,FactorOperation::[],Times)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.TimesOperation )
     | (_,FactorOperation::[],Divide)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.DivideOperation )
@@ -160,6 +183,7 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
     | (_,Comparator::[],Equals)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.EqualsCheck)
     | (_,Comparator::[],Distinct)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.DistinctCheck)
     | (_,Comparator::[],Odd)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.OddCheck)
+    
 
 
 

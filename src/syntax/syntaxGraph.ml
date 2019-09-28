@@ -70,20 +70,20 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
     (Sequence([m Token.Begin;proposition;Asterisk(Sequence([m Token.Semicolon; proposition]));m Token.End]));
     Labeled(SyntaxLabel.IfProposition,(Sequence([m Token.If;condition;m Token.Then;proposition])));
     Labeled(SyntaxLabel.WhileProposition,Sequence([m Token.While;condition;m Token.Do;proposition]));
-    (Sequence([m Token.Writeln;Maybe(Sequence([
+    Labeled(SyntaxLabel.WriteLineProposition,(Sequence([m Token.Writeln;Maybe(Sequence([
       m Token.OpenParenthesis; 
-      Or([m_string;expression]);
+      Or([Labeled(SyntaxLabel.WriteExpression, m_string);Labeled(SyntaxLabel.WriteExpression,expression)]);
       Asterisk(Sequence([
-        m Token.Comma; Or([m_string;expression]);
+        m Token.Comma; Or([Labeled(SyntaxLabel.WriteExpression, m_string);Labeled(SyntaxLabel.WriteExpression,expression)]);
       ]));
       m Token.ClosedParenthesis
-    ]))]));
+    ]))])));
     (Sequence([
       m Token.Write;
       m Token.OpenParenthesis;
-      Or([m_string;expression]);
+      Or([Labeled(SyntaxLabel.WriteExpression, m_string);Labeled(SyntaxLabel.WriteExpression,expression)]);
       Asterisk(Sequence([
-        m Token.Comma;Or([m_string;expression])
+        m Token.Comma;Or([Labeled(SyntaxLabel.WriteExpression, m_string);Labeled(SyntaxLabel.WriteExpression,expression)])
       ]));
       m Token.ClosedParenthesis
     ]));

@@ -23,3 +23,5 @@ type t=
 |FactorOperation
 |TermOperation
 |Comparator
+|WriteLineProposition
+|WriteExpression
