@@ -90,7 +90,7 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
     (Sequence([
       m Token.Readln;
       m Token.OpenParenthesis;
-      m_ident;
+      Labeled(SyntaxLabel.VariableAssignFromReadln,m_ident);
       Asterisk(Sequence([m Token.Comma;Labeled(SyntaxLabel.VariableAssignFromReadln,m_ident)]));
       m Token.ClosedParenthesis
     ]));
