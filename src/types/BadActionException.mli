@@ -1,0 +1,1 @@
+exception BadActionException of Action.t

@@ -45,6 +45,7 @@ let compile (opt:options):unit =
       |> (if log_syntax_result then TokenWithLabelsOps.print_lazylist else pass_char)
       |> Interpreter.run
       |> (if log_interpretation then ActionOps.print_lazylist else pass_char)
+      |> SemanticsVerifier.run
       |> run_all
     |[]->()
   with 
@@ -58,6 +59,8 @@ let compile (opt:options):unit =
   )
   |BadTokenException.BadTokenException(t)->
     (print_string ((TokenOps.string_of_token_coords t)^"\n" ) )
+  |BadActionException.BadActionException(a)->
+    (print_string ("BAD ACTION: "^(ActionOps.string_of_action a)^"\n"))
   
 let () =
   get_options () |> compile
