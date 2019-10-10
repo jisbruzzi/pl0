@@ -19,10 +19,3 @@ let string_of_action(a:Action.t):string=
   |PrintResult->"PrintResult"
   |PrintString(s)->"PrintString"^s
 
-let rec print_lazylist(a:Action.t Lazylist.gen_t):Action.t Lazylist.gen_t=
-  match a () with
-  | Empty->a
-  | Cons(hd,tl)->(
-    (print_string ((string_of_action hd)^"\n") );
-    fun () -> Cons(hd,print_lazylist tl)
-  )

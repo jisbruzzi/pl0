@@ -23,12 +23,7 @@ let get_options ():options=
     (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation)
   end
 
-let pass_char (arg:'a Lazylist.gen_t)=arg
-let rec run_all (arg:'a Lazylist.gen_t)=
-  match(arg()) with 
-  |Empty->()
-  |Cons(t,lst)->run_all lst
-
+(*  (LazylistOps.print ) *)
 
 let compile (opt:options):unit = 
   try
@@ -36,17 +31,17 @@ let compile (opt:options):unit =
     match files with
     | hd::tl -> hd 
       |> ReadFile.read_lazy_file 
-      |> (if log then ReadFile.log_lines_and_pass else pass_char)
+      |> (if log then ReadFile.log_lines_and_pass else LazylistOps.pass)
       |> ReadFile.add_coordinates
       |> Tokenize.run
       |> Tokenize.check
-      |> (if print_tokens then TokenOps.print_tokens_coords else pass_char)
+      |> (if print_tokens then (LazylistOps.print TokenOps.string_of_token_coords "|") else LazylistOps.pass)
       |> (Verifier.run log_syntax)
-      |> (if log_syntax_result then TokenWithLabelsOps.print_lazylist else pass_char)
+      |> (if log_syntax_result then (LazylistOps.print TokenWithLabelsOps.string_of_token_with_label "\n") else LazylistOps.pass)
       |> Interpreter.run
-      |> (if log_interpretation then ActionOps.print_lazylist else pass_char)
+      |> (if log_interpretation then (LazylistOps.print ActionOps.string_of_action "\n") else LazylistOps.pass)
       |> SemanticsVerifier.run
-      |> run_all
+      |> LazylistOps.run_all
     |[]->()
   with 
   |SyntaxError.SyntaxException (e,tc)->(

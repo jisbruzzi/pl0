@@ -51,13 +51,6 @@ let print_token t = print_string ("|"^(string_of_token t))
 
 let print_token_coords tc = print_string ("|" ^ string_of_token_coords tc)
 
-let rec print_tokens(tokens:token Lazylist.gen_t)=
-  match (tokens()) with
-  | Empty -> ()
-  | Cons(t,lst) -> 
-    (print_token t);
-    (print_char '\n');
-    (print_tokens lst)
 
 let rec print_tokens_coords (tokens:TokenWithCoords.t Lazylist.gen_t):TokenWithCoords.t Lazylist.gen_t =
   match (tokens()) with

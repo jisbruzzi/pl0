@@ -6,11 +6,3 @@ let string_of_action_with_context(a:ActionWithContext.t):string=
     let contexts=String.concat " -- " contexts in
     action ^":"^contexts
   )
-
-let rec print_lazylist(actions:ActionWithContext.t Lazylist.gen_t):ActionWithContext.t Lazylist.gen_t=
-  match actions() with
-  | Empty->actions
-  | Cons(hd,tl)->(
-    (print_string ((string_of_action_with_context hd)^"\n") );
-    fun () -> Cons(hd,print_lazylist tl)
-  )

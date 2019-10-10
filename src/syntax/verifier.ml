@@ -81,7 +81,7 @@ let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):
         (print_string "-------\n");
         (PatternOps.print_pattern tester);
         (print_string "--WITH TOKEN:--");
-        (TokenOps.print_token token);
+        (token|>TokenOps.string_of_token|>print_string);
         (print_string "-------\n")
       ));(
         match syntax_match tester token with

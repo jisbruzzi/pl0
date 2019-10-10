@@ -8,11 +8,3 @@ let string_of_token_with_label(t:TokenWithLabels.t):string=
 
 let print_token_with_label(t:TokenWithLabels.t):unit=
   print_string (string_of_token_with_label t^"\n")
-
-let rec print_lazylist(input:TokenWithLabels.t Lazylist.gen_t):TokenWithLabels.t Lazylist.gen_t=
-  match input () with
-  | Empty->input
-  | Cons(hd,gen)->(
-    print_token_with_label hd;
-    fun()->Cons(hd,print_lazylist gen)
-  )
