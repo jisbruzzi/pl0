@@ -85,36 +85,48 @@ let next_state (s:automata_state)(cc:CharWithCoords.t):automata_state=
     |(TransitionOperator(coords,_),(Decimal(c)|Alphabetic(c)|Other(c)|Space(c))) -> TerminalNoChar(coords,Nul(c))
     |(TransitionOperator(coords,_),EndOfFile) -> TerminalNoChar(coords,EndOfFileToken)
 
+let tuple_with(t:token_coords)(tuple:(automata_state* token_coords list)):(automata_state * token_coords list)=
+  let s,tcl=tuple in (s,t::tcl)
 
-let rec run (s:automata_state)(file:CharWithCoords.t Lazylist.gen_t):token_coords Lazylist.gen_t =
-  fun ()-> 
-  let create_next =  fun  (cc:CharWithCoords.t)(f:CharWithCoords.t Lazylist.gen_t) -> (run ( next_state s cc ) f) 
-  in
-    match s with
-    | Terminal(t,cc) -> Cons(
-          t,
-          create_next cc file
-        )
-    | _ ->
-      match (file(),s) with
-      | (Empty,TerminalNoChar(t)) -> Cons(t,fun ()->Empty)
-      | (Empty,Terminal(t,cc)) -> Cons(t,fun ()->Empty)
-      | (Empty,_) -> Empty
-      | (Cons(cc,next_file),TerminalNoChar(t))->Cons(
-          t,
-          create_next cc next_file
-        )
-      | (Cons(cc,next_file),_)-> create_next cc next_file ()
+let pcc (c:CharWithCoords.t)=
+  match c with
+  |(coords,EndOfFile)->print_string "EOF"
+  |(coords,Char c )->print_char c
+
+let pas s=
+  print_string (">"^(match s with
+  |Initial->"Initial"
+  |TransitionIdentOrKw(c,s)->"TransitionIdentOrKw"
+  |TransitionNumber(c,s)->"TransitionNumber"
+  |Terminal(tc,c)->pcc c;"Terminal "
+  |TerminalNoChar(tc)->"TerminalNoChar"
+  |TransitionString(c,s)->"TransitionString"
+  |TransitionOperator(c,s)->"TransitionOperator"
+  ))
+
+let rec process(cc:CharWithCoords.t)(state:automata_state):(automata_state* token_coords list*CharWithCoords.t list)=
+  match next_state state cc with
+  |Terminal(t,cc)->(Terminal(t,cc),[t],[cc])
+  |TerminalNoChar(t)->(TerminalNoChar(t),[t],[])
+  |s->(s,[],[])
+  
+(*
+  let s=next_state state cc  in( pas s;print_string "%%";pcc cc;
+  (match s with
+  | Terminal(t,cprevio)-> tuple_with t (process cc (next_state s cprevio))
+  | TerminalNoChar(t)-> (TerminalNoChar(t),[t])
+  | s ->(s,[])))
+  *)
+
 
 let run (file:CharWithCoords.t Lazylist.gen_t):token_coords Lazylist.gen_t =
-  run Initial file
+  LazylistOps.run process file Initial
+
 
 let rec check (tokens:token_coords Lazylist.gen_t):token_coords Lazylist.gen_t=
-  fun () -> match tokens () with
-  | Cons(h,nxt) -> ((
-    match h with
-      | (_,(Token.BadString(_)|Token.Nul(_)|BadInteger(_))) -> raise (BadTokenException.BadTokenException(h))
+  LazylistOps.stateless_run (fun t ->
+    (match t with
+      | (_,(Token.BadString(_)|Token.Nul(_)|BadInteger(_))) -> raise (BadTokenException.BadTokenException(t))
       |  _ -> ()
-    );Cons(h,(check nxt))
-  )
-  | Empty -> Empty
+    );Some(t)
+  ) tokens
