@@ -91,5 +91,22 @@ let rec run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t)(tester:pattern):
       )
   | Empty -> (fun () -> Lazylist.Empty)
 
+
+let process(log:bool)(token_coords:TokenWithCoords.t)(tester:SyntaxGraph.pattern):(SyntaxGraph.pattern * TokenWithLabels.t list * TokenWithCoords.t list)=
+  let (_,token)=token_coords in
+  (if log then (
+    (print_string "-------\n");
+    (PatternOps.print_pattern tester);
+    (print_string "--WITH TOKEN:--");
+    (token|>TokenOps.string_of_token|>print_string);
+    (print_string "-------\n")
+  ));(
+    match syntax_match tester token with
+    | Next(next_pattern,labels) -> (next_pattern,[(labels,token_coords)],[])
+    | Error(error) -> raise (SyntaxError.SyntaxException(error,token_coords))
+    | _-> (tester,[],[])
+  )
+
 let run (log:bool)(tokens:TokenWithCoords.t Lazylist.gen_t):TokenWithLabels.t Lazylist.gen_t =
-  run log tokens (graph ())
+  (*run log tokens (graph ())*)
+  LazylistOps.run (process log) tokens (graph ())
