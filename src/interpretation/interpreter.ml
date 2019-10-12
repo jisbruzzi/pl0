@@ -210,16 +210,11 @@ let rec make_lazylist_from(actions:Action.t list)(gen:Action.t Lazylist.gen_t):A
   | hd::tl->Lazylist.Cons(hd,fun()->(make_lazylist_from tl gen))
   | []->gen ()
 
-
-let rec run_interpretation(tokens:TokenWithLabels.t Lazylist.gen_t)(state:interpreter_state):Action.t Lazylist.gen_t=
-  (*print_string "---------------\n";*)
-  let elem=tokens () in match elem with
-  | Empty->(fun ()->Empty)
-  | Cons(hd,gen)->
-      match next_state state hd with
-      |Terminal(actions,lst)->
-        fun ()-> make_lazylist_from actions (run_interpretation gen (Terminal (actions,lst) ))
-      |other->(run_interpretation gen other)
+let interpret(token:TokenWithLabels.t)(state:interpreter_state):(interpreter_state*Action.t list*TokenWithLabels.t list)=
+  match state with
+  | Terminal(actions,lst)->(next_state state token, actions,[])
+  | _->(next_state state token, [],[])
 
 let run(tokens:TokenWithLabels.t Lazylist.gen_t):Action.t Lazylist.gen_t=
-  run_interpretation tokens BeginProgram
+  (*run_interpretation tokens BeginProgram*)
+  LazylistOps.run interpret tokens BeginProgram
