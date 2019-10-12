@@ -26,3 +26,5 @@ let string_of_label(l:SyntaxLabel.t)=
   |Comparator->"Comparator"
   |WriteLineProposition->"WriteLineProposition"
   |WriteExpression->"WriteExpression"
+  |ProcedureBlockDeclaration->"ProcedureBlockDeclaration"
+  |NoLabel->"NoLabel"

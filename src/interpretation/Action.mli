@@ -11,6 +11,7 @@ type t=
 |OkThen
 |EndIfBlock
 |WriteVariableFromInput of string
+|BeginWhileBlock
 |EndWhileBlock
 |IntegerRead of string
 |Operate of Operation.t

@@ -18,4 +18,5 @@ let string_of_action(a:Action.t):string=
   |PrintNewline->"PrintNewline"
   |PrintResult->"PrintResult"
   |PrintString(s)->"PrintString"^s
+  |BeginWhileBlock->"BeginWhileBlock"
 

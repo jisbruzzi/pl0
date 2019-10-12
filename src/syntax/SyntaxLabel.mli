@@ -25,3 +25,5 @@ type t=
 |Comparator
 |WriteLineProposition
 |WriteExpression
+|ProcedureBlockDeclaration
+|NoLabel

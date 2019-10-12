@@ -23,6 +23,14 @@ let rec print(conv:'a->string)(separator:string)(src:'a Lazylist.gen_t):('a Lazy
     hd |> conv |> (fun s->separator^s) |> print_string; Cons(hd,(print conv separator lst))
   )
 
+(*let rec map(conv:'a->'b list)(src:'a Lazylist.gen_t):'b Lazylist.gen_t=
+  fun () ->
+  match src () with
+  | Empty->Empty
+  | Cons(hd, lst)->match conv hd with
+    | hd::tl-> lazylist_with (hd::tl) lst
+    | []->lst ()
+*)
 let pass(arg:'a Lazylist.gen_t)=arg
 
 let rec run_all (arg:'a Lazylist.gen_t):unit=

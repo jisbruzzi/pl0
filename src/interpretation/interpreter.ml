@@ -1,75 +1,23 @@
 type context_explainer=
-|RootContext
-|ProcedureContext
 |ConstantDeclarationContext of string
-|PropositionContext
-|ExpressionContext of Operation.t
-|TermContext  of Operation.t
 |AssignationContext of string
-|IfContext
-|WhileContext
-|FactorContext of Operation.t
 |OperateAfterNextContext of Operation.t
-|WriteLineContext
-|WriteExpressionContext
+|OperableContext of Operation.t
 
 type interpreter_state=
 |BeginProgram
 |Terminal of Action.t list*context_explainer list
 |ContextStack of context_explainer list
 
-let state_with_context (s:interpreter_state)(c:context_explainer):interpreter_state=
-  match s with
-  |BeginProgram->BeginProgram
-  |Terminal(a,clst)->Terminal(a,c::clst)
-  |ContextStack(clst)->ContextStack(c::clst)
-
-let state_with_action  (s:interpreter_state)(a:Action.t):interpreter_state=
-  match a with
-  |Operate(Operation.NoOperation)->s
-  |_->
-    match s with
-    |BeginProgram->BeginProgram
-    |Terminal(alst,clst)->Terminal(List.rev (a:: List.rev alst),clst)
-    |ContextStack(clst)->Terminal(a::[],clst)
-
-let string_of_action(a:Action.t)=
-  match a with
-  |DeclareVariable(v)->"DeclareVariable "^v
-  |DeclareConstant(n,v)->"DeclareConstant "^n^":"^v
-  |DeclareProcedure(n)->"DeclareProcedure "^n
-  |ReadVariable(v)->"ReadVariable "^v
-  |CallProcedure(n)->"CallProcedure "^n
-  |ReadVariableOrConstant(n)->"ReadVariableOrConstant "^n
-  |WriteVariable(n)->"WriteVariable "^n
-  |BeginContext->"BeginContext "
-  |EndContext->"EndContext "
-  |OkThen->"OkThen"
-  |EndIfBlock->"EndIfBlock"
-  |EndWhileBlock->"EndWhileBlock"
-  |WriteVariableFromInput (s)->"WriteVariableFromInput "^s
-  |IntegerRead(s)->"IntegerRead "^s
-  |Operate(op)-> "Operate "
-  |PrintNewline->"PrintNewline"
-  |PrintResult->"PrintResult"
-  |PrintString(s)->"PrintString "^s
+let string_of_action=ActionOps.string_of_action
   
 
 let string_of_context(c:context_explainer)=
   match c with
-  |RootContext->"RootContext"
-  |ProcedureContext->"ProcedureContext"
   |ConstantDeclarationContext(name)->"ConstantDeclarationContext "^name
-  |PropositionContext->"PropositionContext"
-  |ExpressionContext(op)->"ExpressionContext"
-  |TermContext(op)->"TermContext"
-  |FactorContext(op)->"FactorContext"
   |AssignationContext(name)->"AssignationContext "^name
-  |IfContext->"IfContext"
-  |WhileContext->"WhileContext"
   |OperateAfterNextContext(op) -> "OperateAfterNextContext"
-  |WriteLineContext->"WriteLineContext"
-  |WriteExpressionContext->"WriteExpressionContext"
+  |OperableContext(op)->"OperableContext"
 
 let string_of_interpreter_state(s:interpreter_state):string=
   match s with
@@ -80,134 +28,77 @@ let string_of_interpreter_state(s:interpreter_state):string=
 let print_interpreter_state(s:interpreter_state):unit=
   print_string ((string_of_interpreter_state s) ^"\n")
 
-let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_state=
-  
-  let labels,(coords,token)=token in
-  let ns cl lb = next_state (ContextStack cl) (lb,(coords,token)) in 
-  let ret = match s with
-  | BeginProgram->next_state (ContextStack []) (labels,(coords,token))
-  | Terminal(_,context_list)->next_state (ContextStack context_list) (labels,(coords,token))
-  | ContextStack(context_list)->
-    match (context_list,labels,token) with
-    (* saltear root *)
-    | (RootContext::context_list,ProgramRoot::Block::labels,_)->state_with_context (ns context_list labels) RootContext
-    | (context_list,ProgramRoot::Block::labels,_)->state_with_context (ns context_list labels) RootContext
-    | (RootContext::context_list,labels,_)->(ns context_list labels)
+let rec next_state(state:interpreter_state)(change:ContextChange.t)=
+  match state with
+  |BeginProgram ->next_state (ContextStack []) change
+  |Terminal(_,context_stack) -> next_state (ContextStack context_stack) change
+  |ContextStack(context_stack)->
+    let oc=fun(op)->ContextStack((OperateAfterNextContext op)::context_stack) in
+    match change,context_stack with
+    (* contextos de procedimientos *)
+    |ContextChange.Arrives(SyntaxLabel.ProcedureBlockDeclaration),_->Terminal([BeginContext],context_stack)
+    |ContextChange.Exits(SyntaxLabel.ProcedureBlockDeclaration),_->Terminal([EndContext],context_stack)
 
-    (* detectar principio y fin de cuerpo de procedure *)
-    | (ProcedureContext::context_list,ProcedureDeclaration::Block::labels,_)->state_with_context (ns context_list labels) ProcedureContext
-    | (context_list,ProcedureDeclaration::Block::labels,_)->state_with_action (state_with_context (ns context_list labels) ProcedureContext) BeginContext
-    | (ProcedureContext::context_list,labels,_)->state_with_action (ns context_list labels) EndContext
+    (* declaración de constantes*)
+    |ContextChange.Passes(SyntaxLabel.ConstantNameDeclaration,(_,Token.Ident(constant_name))),_->ContextStack(ConstantDeclarationContext(constant_name)::context_stack)
+    |ContextChange.Passes(ConstantValue,(_,Token.Integer(value))),ConstantDeclarationContext(name)::[]->Terminal([DeclareConstant(name,value)],context_stack)
 
+    (* Contextos operables*)
+    |ContextChange.Arrives(SyntaxLabel.Proposition|SyntaxLabel.Expression|SyntaxLabel.Term|SyntaxLabel.Factor),OperateAfterNextContext(op)::rest_of_stack->ContextStack(OperableContext(op)::rest_of_stack)
+    |ContextChange.Arrives(SyntaxLabel.Proposition|SyntaxLabel.Expression|SyntaxLabel.Term|SyntaxLabel.Factor),_->ContextStack(OperableContext(Operation.NoOperation)::context_stack)
+    |ContextChange.Exits(SyntaxLabel.Proposition|SyntaxLabel.Expression|SyntaxLabel.Term|SyntaxLabel.Factor),OperableContext(op)::rest_of_stack->Terminal([Operate(op)],rest_of_stack)
 
-    | (ConstantDeclarationContext(name)::context_list,ConstantNameDeclaration::[],Ident(s))->state_with_context (ns context_list labels) (ConstantDeclarationContext name )
-    | (context_list,ConstantNameDeclaration::[],Ident(name))->state_with_context (ns context_list []) (ConstantDeclarationContext name)
+    (*prints *)
+    |ContextChange.Exits(SyntaxLabel.WriteLineProposition),_->Terminal([PrintNewline],context_stack)
+    |ContextChange.Exits(SyntaxLabel.WriteExpression),_->Terminal([PrintResult],context_stack)
+    |ContextChange.Passes(WriteExpression,(_,Token.StringTerminal(value))),_->Terminal([PrintString(value)],context_stack)
 
-    | (ConstantDeclarationContext(name)::context_list,ConstantValue::[],Integer(value))->Terminal([DeclareConstant(name,value)],[])
+    (* asignacion *)
 
-    (* saltear proposition,expression, term y factor, ya veré qué se hace con esos*)
-    | (PropositionContext::context_list,Proposition::labels,_)->state_with_context (ns context_list labels) PropositionContext
-    | (context_list,Proposition::labels,_)->state_with_context (ns context_list labels) PropositionContext
-    | (PropositionContext::context_list,labels,_)-> (ns context_list labels)
+    |ContextChange.Passes(SyntaxLabel.VariableAssign,(_,Token.Ident(name))),_->ContextStack(AssignationContext(name)::context_stack)
+    |ContextChange.Exits(SyntaxLabel.AssignationProposition),AssignationContext(name)::rest_of_stack->Terminal([WriteVariable(name)],rest_of_stack)
 
-    | (ExpressionContext(op)::context_list,Expression::labels,_)->state_with_context (ns context_list labels) (ExpressionContext op)
-    | (OperateAfterNextContext(op)::context_list,Expression::labels,_)->state_with_context (ns context_list labels) (ExpressionContext op)
-    | (context_list,Expression::labels,_)->state_with_context (ns context_list labels) (ExpressionContext Operation.NoOperation)
-    | (ExpressionContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
+    (* if *)
+    |ContextChange.Passes(_,(_,Token.Then)),_->Terminal([OkThen],context_stack)
+    |ContextChange.Exits(SyntaxLabel.IfProposition),_->Terminal([EndIfBlock],context_stack)
 
-    | (TermContext(op)::context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext op)
-    | (OperateAfterNextContext(op)::context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext op)
-    | (context_list,Term::labels,_)->state_with_context (ns context_list labels) (TermContext Operation.NoOperation)
-    | (TermContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
+    (* while *)
+    |ContextChange.Passes(_,(_,Token.While)),_->Terminal([BeginWhileBlock],context_stack)
+    |ContextChange.Passes(_,(_,Token.Do)),_->Terminal([OkThen],context_stack)
+    |ContextChange.Exits(SyntaxLabel.WhileProposition),_->Terminal([EndWhileBlock],context_stack)
 
-    (* WriteLineProposition *)
+    (* insertar acciones de declaración y uso de variables,constantes, procedures *)
+    |ContextChange.Passes(label,(coords,token)),_-> (
+      match label,token with
+      | (VariableDeclaration,Ident(s))->Terminal([DeclareVariable(s)],context_stack)
+      | (ProcedureNameDeclaration,Ident(s))->Terminal([DeclareProcedure(s)],context_stack)
+      | (ProcedureNameCall,Ident(s))->Terminal([CallProcedure(s)],context_stack)
+      | (ConstOrVarRead,Ident(s))->Terminal([ReadVariableOrConstant(s)],context_stack)
+      | (VariableAssignFromReadln,Ident(s))->Terminal([WriteVariableFromInput(s)],context_stack)
+      | (LiteralInteger,Integer(s))->Terminal([IntegerRead(s)],context_stack)
+      | (FactorOperation,Times)-> oc Operation.TimesOperation
+      | (FactorOperation,Divide)-> oc Operation.DivideOperation
+      | (TermOperation,Plus)-> oc Operation.PlusOperation
+      | (TermOperation,Minus)-> oc Operation.MinusOperation
+      | (Negation,Minus)-> oc Operation.NegateOperation
+      | (Comparator,GreaterOrEqual)-> oc Operation.GreaterOrEqualCheck
+      | (Comparator,Greater)-> oc Operation.GreaterCheck
+      | (Comparator,LessOrEqual)-> oc Operation.LessOrEqualCheck
+      | (Comparator,Less)-> oc Operation.LessCheck
+      | (Comparator,Equals)-> oc Operation.EqualsCheck
+      | (Comparator,Distinct)-> oc Operation.DistinctCheck
+      | (Comparator,Odd)-> oc Operation.OddCheck
 
-    | (WriteLineContext::context_list,WriteLineProposition::labels,_)->state_with_context (ns context_list labels) WriteLineContext
-    | (context_list,WriteLineProposition::labels,_)->state_with_context (ns context_list labels) WriteLineContext
-    | (WriteLineContext::context_list,labels,_)-> state_with_action (ns context_list labels) PrintNewline
-
-    | (_,WriteExpression::[],StringTerminal(s))->Terminal([PrintString(s)],[])
-    | (WriteExpressionContext::context_list,WriteExpression::labels,_)->state_with_context (ns context_list labels) WriteExpressionContext
-    | (context_list,WriteExpression::labels,_)->state_with_context (ns context_list labels) WriteExpressionContext
-    | (WriteExpressionContext::context_list,labels,_)-> state_with_action (ns context_list labels) PrintResult
-
-    
-
-
-    | (FactorContext(op)::context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext op)
-    | (OperateAfterNextContext(op)::context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext op)
-    | (context_list,Factor::labels,_)->state_with_context (ns context_list labels) (FactorContext Operation.NoOperation)
-    | (FactorContext(op)::context_list,labels,_)-> state_with_action (ns context_list labels) (Operate op)
-    
-    
-    (* contexto de asignacion *)
-    | (context_list,AssignationProposition::VariableAssign::[],Ident(name))->state_with_context (ns context_list []) (AssignationContext name)
-    | (AssignationContext(name)::context_list,AssignationProposition::labels,_)-> state_with_context (ns context_list labels) (AssignationContext name)
-    | (AssignationContext(name)::context_list,labels,_)-> state_with_action (ns context_list labels) (WriteVariable(name))
-
-    (* contexto del if *)
-    | (IfContext::context_list,IfProposition::labels,Then)->state_with_action (state_with_context (ns context_list labels) IfContext) OkThen
-    | (IfContext::context_list,IfProposition::labels,_)->state_with_context (ns context_list labels) IfContext
-    | (IfContext::context_list,labels,_)->state_with_action (ns context_list labels) EndIfBlock
-    | (context_list,IfProposition::labels,_)->state_with_context (ns context_list labels) IfContext
-
-
-    (* contexto del while *)
-    | (WhileContext::context_list,WhileProposition::labels,Do)->state_with_action (state_with_context (ns context_list labels) WhileContext) OkThen
-    | (WhileContext::context_list,WhileProposition::labels,_)->state_with_context (ns context_list labels) WhileContext
-    | (WhileContext::context_list,labels,_)->state_with_action (ns context_list labels) EndWhileBlock
-    | (context_list,WhileProposition::labels,_)->state_with_context (ns context_list labels) WhileContext
-
-
-    
-
-    (* insertar acciones de declaración y uso de variables,constantes, procedures  *)
-    | (_,VariableDeclaration::[],Ident(s))->Terminal([DeclareVariable(s)],[])
-    | (_,ProcedureDeclaration::ProcedureNameDeclaration::[],Ident(s))->Terminal([DeclareProcedure(s)],[])
-    | (_,ProcedureNameCall::[],Ident(s))->Terminal([CallProcedure(s)],[])
-    | (_,ConstOrVarRead::[],Ident(s))->Terminal([ReadVariableOrConstant(s)],[])
-    | (_,VariableAssignFromReadln::[],Ident(s))->Terminal([WriteVariableFromInput(s)],[])
-    | (_,LiteralInteger::[],Integer(s))->Terminal([IntegerRead(s)],[])
-    
-    
-
-    | (_,FactorOperation::[],Times)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.TimesOperation )
-    | (_,FactorOperation::[],Divide)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.DivideOperation )
-    | (_,TermOperation::[],Plus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.PlusOperation )
-    | (_,TermOperation::[],Minus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.MinusOperation )
-    | (_,Negation::[],Minus)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.NegateOperation )
-    | (_,Comparator::[],GreaterOrEqual)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.GreaterOrEqualCheck)
-    | (_,Comparator::[],Greater)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.GreaterCheck)
-    | (_,Comparator::[],LessOrEqual)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.LessOrEqualCheck)
-    | (_,Comparator::[],Less)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.LessCheck)
-    | (_,Comparator::[],Equals)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.EqualsCheck)
-    | (_,Comparator::[],Distinct)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.DistinctCheck)
-    | (_,Comparator::[],Odd)-> state_with_context (ns [] []) ( OperateAfterNextContext Operation.OddCheck)
-    
-
-
-
-    (* catch-all *)
-    | (contexts,labels,token)->ContextStack(contexts)
-    in (
-      (*
-      print_string "==\n";
-      print_string "estado inicial:\n";
-      print_string "interpreter state inicial: ";
-      print_interpreter_state s;
-      print_string "token inicial: ";
-      TokenWithLabelsOps.print_token_with_label (labels,(coords,token));
-      print_string "estado final:  ";
-      print_interpreter_state ret;
-      *)
-      ret
+      | _->ContextStack(context_stack)
     )
+    | _ -> ContextStack(context_stack)
+    
 
-let interpret(token:TokenWithLabels.t)(state:interpreter_state):(interpreter_state*Action.t list*TokenWithLabels.t list)=
+let interpret(token:ContextChange.t)(state:interpreter_state):(interpreter_state*Action.t list*ContextChange.t list)=
   match state with
   | Terminal(actions,lst)->(next_state state token, actions,[])
   | _->(next_state state token, [],[])
 
-let run(tokens:TokenWithLabels.t Lazylist.gen_t):Action.t Lazylist.gen_t=
+let run(tokens:ContextChange.t Lazylist.gen_t):Action.t Lazylist.gen_t=
   (*run_interpretation tokens BeginProgram*)
   LazylistOps.run interpret tokens BeginProgram

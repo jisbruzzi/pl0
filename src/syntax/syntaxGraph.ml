@@ -125,7 +125,7 @@ let rec block_fn (proposition:pattern) ():pattern = Labeled(SyntaxLabel.Block,Se
       m Token.Procedure; 
       Labeled(SyntaxLabel.ProcedureNameDeclaration,m_ident); 
       m Token.Semicolon; 
-      In(block_fn proposition,"bloque")
+      Labeled(SyntaxLabel.ProcedureBlockDeclaration,In(block_fn proposition,"bloque"))
     ])); m Token.Semicolon
   ]));
   proposition
