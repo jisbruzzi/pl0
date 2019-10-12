@@ -203,13 +203,6 @@ let rec next_state(s:interpreter_state)(token:TokenWithLabels.t):interpreter_sta
       ret
     )
 
-    
-let rec make_lazylist_from(actions:Action.t list)(gen:Action.t Lazylist.gen_t):Action.t Lazylist.t=
-  match actions with
-  | hd::[]->Lazylist.Cons(hd,gen)
-  | hd::tl->Lazylist.Cons(hd,fun()->(make_lazylist_from tl gen))
-  | []->gen ()
-
 let interpret(token:TokenWithLabels.t)(state:interpreter_state):(interpreter_state*Action.t list*TokenWithLabels.t list)=
   match state with
   | Terminal(actions,lst)->(next_state state token, actions,[])

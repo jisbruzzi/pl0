@@ -38,9 +38,13 @@ let compile (opt:options):unit =
       |> (if print_tokens then (LazylistOps.print TokenOps.string_of_token_coords "|") else LazylistOps.pass)
       |> (Verifier.run log_syntax)
       |> (if log_syntax_result then (LazylistOps.print TokenWithLabelsOps.string_of_token_with_label "\n") else LazylistOps.pass)
+      |> Desyntax.run
+      |> LazylistOps.print ContextChangeOps.as_string "\n"
+      (*
       |> Interpreter.run
       |> (if log_interpretation then (LazylistOps.print ActionOps.string_of_action "\n") else LazylistOps.pass)
       |> SemanticsVerifier.run
+      *)
       |> LazylistOps.run_all
     |[]->()
   with 

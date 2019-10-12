@@ -1,0 +1,1 @@
+type t=Arrives of SyntaxLabel.t|Exits of SyntaxLabel.t|Passes of TokenWithLabels.t
