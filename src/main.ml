@@ -1,8 +1,9 @@
 type token = Token.t
 
-type options=(string list*bool*bool*bool*bool*bool)(* files,--print-tokens, --print-syntax,--log *)
+type options=(string list*bool*bool*bool*bool*bool*bool)(* files,--print-tokens, --print-syntax,--log *)
 let get_options ():options=
   let files = ref [] in
+  let log_desyntax = ref false in
   let print_tokens_opt = ref false in
   let print_syntax_opt = ref false in
   let print_syntax_result_opt = ref false in
@@ -16,18 +17,17 @@ let get_options ():options=
       ("--log-syntax-analysis",Set(print_syntax_opt),"Log syntax analysis");
       ("--log",Set(log_opt),"Activate printing tokens");
       ("--log-syntax-result",Set(print_syntax_result_opt),"Activate printing tokens with syntactic labels");
+      ("--log-desyntax",Set(log_desyntax),"Activate printing desyntaxization");
       ("--log-interpretation",Set(print_interpretation),"Activate printing tokens with syntactic labels")
     ] 
     gather_files 
     "Compilador de PL0 en Ocaml";
-    (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation)
+    (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation,!log_desyntax)
   end
-
-(*  (LazylistOps.print ) *)
 
 let compile (opt:options):unit = 
   try
-    match opt with (files,print_tokens,log_syntax,log,log_syntax_result,log_interpretation)->
+    match opt with (files,print_tokens,log_syntax,log,log_syntax_result,log_interpretation,log_desyntax)->
     match files with
     | hd::tl -> hd 
       |> ReadFile.read_lazy_file 
@@ -39,7 +39,7 @@ let compile (opt:options):unit =
       |> (Verifier.run log_syntax)
       |> (if log_syntax_result then (LazylistOps.print TokenWithLabelsOps.string_of_token_with_label "\n") else LazylistOps.pass)
       |> Desyntax.run
-      (*|> LazylistOps.print ContextChangeOps.as_string "\n"*)
+      |> (if log_desyntax then LazylistOps.print ContextChangeOps.as_string "\n" else LazylistOps.pass)
       |> Interpreter.run
       |> (if log_interpretation then (LazylistOps.print ActionOps.string_of_action "\n") else LazylistOps.pass)
       |> SemanticsVerifier.run

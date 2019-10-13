@@ -93,12 +93,13 @@ let rec next_state(state:interpreter_state)(change:ContextChange.t)=
     )
     | _ -> ContextStack(context_stack)
     
+let remove_noop lst=
+  List.filter (fun(x)->match x with Action.Operate(Operation.NoOperation)->false | _->true) lst
 
 let interpret(token:ContextChange.t)(state:interpreter_state):(interpreter_state*Action.t list*ContextChange.t list)=
   match state with
-  | Terminal(actions,lst)->(next_state state token, actions,[])
+  | Terminal(actions,lst)->(next_state state token, remove_noop actions,[])
   | _->(next_state state token, [],[])
 
 let run(tokens:ContextChange.t Lazylist.gen_t):Action.t Lazylist.gen_t=
-  (*run_interpretation tokens BeginProgram*)
   LazylistOps.run interpret tokens BeginProgram
