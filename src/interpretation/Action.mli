@@ -9,6 +9,7 @@ type t=
 |BeginContext
 |EndContext
 |OkThen
+|OkDo
 |EndIfBlock
 |WriteVariableFromInput of string
 |BeginWhileBlock

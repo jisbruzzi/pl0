@@ -46,6 +46,8 @@ let compile (opt:options):unit =
       |> (if log_interpretation then (LazylistOps.print ActionOps.string_of_action "\n") else LazylistOps.pass)
       |> ContextRemover.run
       |> (if log_no_context then LazylistOps.print ContextRemoverOps.string_of_contextualized "\n" else LazylistOps.pass)
+      |> FlowRemover.run
+      |> LazylistOps.print FlowActionOps.to_string "\n"
       |> LazylistOps.run_all
     |[]->()
   with 

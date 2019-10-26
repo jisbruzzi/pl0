@@ -10,6 +10,7 @@ let string_of_action(a:Action.t):string=
   |CallProcedure(name)->"CallProcedure:"^name
   |WriteVariable(name)->"WriteVariable:"^name
   |OkThen->"OkThen"
+  |OkDo->"OkDo"
   |EndIfBlock->"EndIfBlock"
   |EndWhileBlock->"EndWhileBlock"
   |WriteVariableFromInput(s)->"WriteVariableFromInput "^s

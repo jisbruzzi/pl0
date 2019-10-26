@@ -64,7 +64,7 @@ let rec next_state(state:interpreter_state)(change:ContextChange.t)=
 
     (* while *)
     |ContextChange.Passes(_,(_,Token.While)),_->Terminal([BeginWhileBlock],context_stack)
-    |ContextChange.Passes(_,(_,Token.Do)),_->Terminal([OkThen],context_stack)
+    |ContextChange.Passes(_,(_,Token.Do)),_->Terminal([OkDo],context_stack)
     |ContextChange.Exits(SyntaxLabel.WhileProposition),_->Terminal([EndWhileBlock],context_stack)
 
     (* insertar acciones de declaración y uso de variables,constantes, procedures *)

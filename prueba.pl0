@@ -1,0 +1,15 @@
+var x,y;
+begin
+    x:=0;
+    while x<5 do
+    begin
+        y:=0;
+        while y<5 do
+        begin
+            write (y, ' ');
+            y:=y+1
+        end;
+        x:=x+1;
+        writeln
+    end;
+end.

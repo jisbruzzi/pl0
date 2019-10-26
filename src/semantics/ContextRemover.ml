@@ -58,7 +58,7 @@ let add_constant (s:remover_state)(name:string)(value:string):remover_state=
 
 let add_procedure(s:remover_state)(name:string):remover_state=
   {
-    (with_declaration s (Procedure(name,s.next_variable_identifier)))
+    (with_declaration s (Procedure(name,s.next_procedure_identifier)))
       with next_procedure_identifier=s.next_procedure_identifier+1
   }
 
@@ -110,6 +110,7 @@ let translated_action(action:Action.t)(state:remover_state):ContextualizedAction
   |BeginContext->None
   |EndContext->Some(Return)
   |OkThen->Some(OkThen)
+  |OkDo->Some(OkDo)
   |EndIfBlock->Some(EndIfBlock)
   |WriteVariableFromInput(name)->Some(ContextualizedAction.ReadVariableFromInput(address_of_variable state name))
   |BeginWhileBlock->Some(BeginWhileBlock)

@@ -4,6 +4,7 @@ type t=
 |CallProcedure of int
 |WriteVariable of int
 |OkThen
+|OkDo
 |EndIfBlock
 |WriteVariableFromInput of int
 |BeginWhileBlock
