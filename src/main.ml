@@ -1,6 +1,6 @@
 type token = Token.t
 
-type options=(string list*bool*bool*bool*bool*bool*bool*bool)(* files,--print-tokens, --print-syntax,--log *)
+type options=(string list*bool*bool*bool*bool*bool*bool*bool*bool)(* files,--print-tokens, --print-syntax,--log *)
 let get_options ():options=
   let files = ref [] in
   let log_desyntax = ref false in
@@ -10,6 +10,7 @@ let get_options ():options=
   let log_opt = ref false in
   let log_no_context=ref false in
   let print_interpretation = ref false in
+  let log_no_flow = ref false in
   let gather_files = (fun (fname)->files:= (fname :: !files)) in
   begin
     Arg.parse 
@@ -20,16 +21,17 @@ let get_options ():options=
       ("--log-syntax-result",Set(print_syntax_result_opt),"Activate printing tokens with syntactic labels");
       ("--log-desyntax",Set(log_desyntax),"Activate printing desyntaxization");
       ("--log-interpretation",Set(print_interpretation),"Activate printing tokens with syntactic labels");
-      ("--log-no-context",Set(log_no_context),"Log actions without context")
+      ("--log-no-context",Set(log_no_context),"Log actions without context");
+      ("--log-no-flow",Set(log_no_flow),"Log actions without flow")
     ] 
     gather_files 
     "Compilador de PL0 en Ocaml";
-    (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation,!log_desyntax,!log_no_context)
+    (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation,!log_desyntax,!log_no_context,!log_no_flow)
   end
 
 let compile (opt:options):unit = 
   try
-    match opt with (files,print_tokens,log_syntax,log,log_syntax_result,log_interpretation,log_desyntax,log_no_context)->
+    match opt with (files,print_tokens,log_syntax,log,log_syntax_result,log_interpretation,log_desyntax,log_no_context,log_no_flow)->
     match files with
     | hd::tl -> hd 
       |> ReadFile.read_lazy_file 
@@ -47,7 +49,7 @@ let compile (opt:options):unit =
       |> ContextRemover.run
       |> (if log_no_context then LazylistOps.print ContextRemoverOps.string_of_contextualized "\n" else LazylistOps.pass)
       |> FlowRemover.run
-      |> LazylistOps.print FlowActionOps.to_string "\n"
+      |> (if log_no_flow then LazylistOps.print FlowActionOps.to_string "\n" else LazylistOps.pass)
       |> LazylistOps.run_all
     |[]->()
   with 

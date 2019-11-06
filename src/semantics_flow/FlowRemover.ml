@@ -55,8 +55,8 @@ let declare_procedure (state:remover_state) (id:int)=
   let state = state_with_context state (LabelAfterReturn label_skip_all) in
   let state=state_with_procedure_label state label_this_procedure id in
   (state,[
-    (FlowAction.JumpTo label_skip_all);
-    (FlowAction.LabeledPosition label_this_procedure)
+    (FlowAction.SkipProcedureJumpTo label_skip_all);
+    (FlowAction.ProcedureDeclarationLabeledPosition label_this_procedure)
   ])
 
 let state_without_current_context (state:remover_state)=
@@ -65,7 +65,7 @@ let state_without_current_context (state:remover_state)=
 let unstack_context(state:remover_state)=
   match (current_context_of state) with
   |Some(LabelAfterEndIf(l))->(state_without_current_context state,[FlowAction.LabeledPosition l])
-  |Some(LabelAfterReturn(l))->(state_without_current_context state,[FlowAction.Return;FlowAction.LabeledPosition l])
+  |Some(LabelAfterReturn(l))->(state_without_current_context state,[FlowAction.Return;FlowAction.SkipProcedureLabeledPosition l])
   |Some(EndWhile{jump_before=jb;label_after=la})->(state_without_current_context state,[
     FlowAction.JumpTo jb;
     FlowAction.LabeledPosition la

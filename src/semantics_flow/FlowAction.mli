@@ -13,3 +13,6 @@ type t=
 |JumpTo of int
 |ConditionalJumpTo of int
 |CallJump of int
+|SkipProcedureJumpTo of int
+|SkipProcedureLabeledPosition of int
+|ProcedureDeclarationLabeledPosition of int

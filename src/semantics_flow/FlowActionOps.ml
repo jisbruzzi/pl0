@@ -14,3 +14,6 @@ match a with
 |PrintResult->"PrintResult"
 |PrintNewline->"PrintNewline"
 |Return->"Return"
+|SkipProcedureJumpTo(l)->"SkipProcedureJumpTo "^(string_of_int l)
+|SkipProcedureLabeledPosition(l)->"SkipProcedureLabeledPosition "^(string_of_int l)
+|ProcedureDeclarationLabeledPosition(l)->"ProcedureDeclarationLabeledPosition "^(string_of_int l)
