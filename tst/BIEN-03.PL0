@@ -26,6 +26,10 @@ procedure OTRO;
   begin
     Q := X / Y; R := X - Y * Q
   end;
+  procedure DALEEEE;
+  begin
+    write('daleeee')
+  end;
 call DIVIDIR;
 
 procedure SALIDA;

@@ -50,6 +50,8 @@ let compile (opt:options):unit =
       |> (if log_no_context then LazylistOps.print ContextRemoverOps.string_of_contextualized "\n" else LazylistOps.pass)
       |> FlowRemover.run
       |> (if log_no_flow then LazylistOps.print FlowActionOps.to_string "\n" else LazylistOps.pass)
+      |> ProcedureTrainOptimiser.run
+      |> LazylistOps.print FlowActionOps.to_string "\n"
       |> LazylistOps.run_all
     |[]->()
   with 
