@@ -5,7 +5,7 @@ match a with
 |ReadVariable(id)->"ReadVariable "^(string_of_int id)
 |WriteVariable(id)->"WriteVariable "^(string_of_int id)
 |WriteVariableFromInput(id)->"WriteVariableFromInput "^(string_of_int id)
-|ReadVariableFromInput(id)->"ReadVariableFromInput "^(string_of_int id)
+(*|ReadVariableFromInput(id)->"ReadVariableFromInput "^(string_of_int id)*)
 |LabeledPosition(id)->"LabeledPosition "^(string_of_int id)
 |JumpTo(id)->"JumpTo "^(string_of_int id)
 |ConditionalJumpTo(id)->"ConditionalJumpTo "^(string_of_int id)

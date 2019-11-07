@@ -112,7 +112,7 @@ let translated_action(action:Action.t)(state:remover_state):ContextualizedAction
   |OkThen->Some(OkThen)
   |OkDo->Some(OkDo)
   |EndIfBlock->Some(EndIfBlock)
-  |WriteVariableFromInput(name)->Some(ContextualizedAction.ReadVariableFromInput(address_of_variable state name))
+  |WriteVariableFromInput(name)->Some(ContextualizedAction.WriteVariableFromInput(address_of_variable state name))
   |BeginWhileBlock->Some(BeginWhileBlock)
   |EndWhileBlock->Some(EndWhileBlock)
   |IntegerRead(value)->Some(IntegerRead(value))

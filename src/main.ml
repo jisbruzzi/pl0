@@ -1,6 +1,6 @@
 type token = Token.t
 
-type options=(string list*bool*bool*bool*bool*bool*bool*bool*bool*bool*bool)(* files,--print-tokens, --print-syntax,--log *)
+type options=(string list*bool*bool*bool*bool*bool*bool*bool*bool*bool*bool*bool)(* files,--print-tokens, --print-syntax,--log *)
 let get_options ():options=
   let files = ref [] in
   let log_desyntax = ref false in
@@ -13,6 +13,7 @@ let get_options ():options=
   let log_no_flow = ref false in
   let opt_proc_train = ref false in
   let opt_proc_call = ref false in
+  let log_labeled_instructions= ref false in
   let gather_files = (fun (fname)->files:= (fname :: !files)) in
   begin
     Arg.parse 
@@ -26,16 +27,17 @@ let get_options ():options=
       ("--log-no-context",Set(log_no_context),"Log actions without context");
       ("--log-no-flow",Set(log_no_flow),"Log actions without flow");
       ("--opt-proc-train",Set(opt_proc_train),"optimise procedure train skip jumps");
-      ("--opt-proc-call",Set(opt_proc_call),"optimise procedure call position")
+      ("--opt-proc-call",Set(opt_proc_call),"optimise procedure call position");
+      ("--log-labeled-instructions",Set(log_labeled_instructions),"Log labeled instructions");
     ] 
     gather_files 
     "Compilador de PL0 en Ocaml";
-    (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation,!log_desyntax,!log_no_context,!log_no_flow,!opt_proc_train,!opt_proc_call)
+    (!files,!print_tokens_opt,!print_syntax_opt,!log_opt,!print_syntax_result_opt,!print_interpretation,!log_desyntax,!log_no_context,!log_no_flow,!opt_proc_train,!opt_proc_call,!log_labeled_instructions)
   end
 
 let compile (opt:options):unit = 
   try
-    match opt with (files,print_tokens,log_syntax,log,log_syntax_result,log_interpretation,log_desyntax,log_no_context,log_no_flow,opt_proc_train,opt_proc_call)->
+    match opt with (files,print_tokens,log_syntax,log,log_syntax_result,log_interpretation,log_desyntax,log_no_context,log_no_flow,opt_proc_train,opt_proc_call,log_labeled_instructions)->
     match files with
     | hd::tl -> hd 
       |> ReadFile.read_lazy_file 
@@ -56,6 +58,8 @@ let compile (opt:options):unit =
       |> (if opt_proc_train then ProcedureTrainOptimiser.run else LazylistOps.pass)
       |> (if opt_proc_call then ProcedureCallOptimiser.run else LazylistOps.pass)
       |> (if log_no_flow then LazylistOps.print FlowActionOps.to_string "\n" else LazylistOps.pass)
+      |> Simplifier.run
+      |> (if log_labeled_instructions then LazylistOps.print LabeledInstructionOps.to_string "\n" else LazylistOps.pass)
       |> LazylistOps.run_all
     |[]->()
   with 

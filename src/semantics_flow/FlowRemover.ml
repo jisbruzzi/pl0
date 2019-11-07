@@ -84,7 +84,6 @@ let remove_flow(a:ContextualizedAction.t)(state:remover_state):(remover_state*Fl
     |PrintNewline->(state,[PrintNewline])
     |PrintString(s)->(state,[PrintString(s)])
     |PrintResult->(state,[PrintResult])
-    |ReadVariableFromInput(id)->(state,[ReadVariableFromInput(id)])
 
     |OkThen->(ok_then state)
     |OkDo->(ok_do state)

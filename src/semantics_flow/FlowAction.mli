@@ -8,7 +8,6 @@ type t=
 |PrintString of string
 |PrintResult
 |Return
-|ReadVariableFromInput of int
 |LabeledPosition of int
 |JumpTo of int
 |ConditionalJumpTo of int

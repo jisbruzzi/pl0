@@ -15,4 +15,3 @@ type t=
 |PrintString of string
 |PrintResult
 |Return
-|ReadVariableFromInput of int
