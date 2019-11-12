@@ -1,7 +1,9 @@
 var x;
 begin
 write('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh');
+writeln;
 write('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh');
+readln(x);
 write('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh');
-readln(x)
+write(x)
 end.

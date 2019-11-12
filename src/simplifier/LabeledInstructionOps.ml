@@ -18,8 +18,6 @@ let to_string(i:LabeledInstruction.t):string=
   |CallPrintString->"CallPrintString "
   |Ret->"Ret "
   |Position(l)->"Position "^(string_of_int l)
-  |CallScanfPreparation->"CallScanfPreparation"
-  |JumpScanfInterruption->"JumpScanfInterruption"
   |Neg(r)->"Neg "^(string_of_registry r)
   |Add(r1,r2)->"Add "^(string_of_registry r1)^(string_of_registry r2)
   |Sub(r1,r2)->"Sub "^(string_of_registry r1)^(string_of_registry r2)
@@ -33,3 +31,11 @@ let to_string(i:LabeledInstruction.t):string=
   |Jpo(l)->"Jpo "^(string_of_int l)
   |Jge(l)->"Jge "^(string_of_int l)
   |Jg(l)->"Jg "^(string_of_int l)
+  |Cdq->"Cdq"
+  |CallScanf->"CallScanf"
+  |CallPrintResult->"CallPrintResult "
+  |StoreStringPositionInEcx->"StoreStringPositionInEcx "
+  |StoreStringLengthInEdx(s)->"StoreStringLengthInEdx "^s
+  |JumpToSkipString(s)->"JumpToSkipString "^s
+  |Xchg(r1,r2)->"Xchg "^(string_of_registry r1)^(string_of_registry r2)
+  |JumpToExit->"JumpToExit"

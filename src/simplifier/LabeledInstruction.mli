@@ -7,17 +7,15 @@ type t=
 |MovToMemory of (int*r) (* MOV [EDI+nro de var] registro *)
 |Call of int (* call label *)
 |MovConstant of (r*string) (* MOV registro, constante*)
-|CallPrintNewLine
 |Ascii of string
-|CallPrintString
 |Ret
-|CallScanfPreparation
-|JumpScanfInterruption
 |Position of int
 |Neg of r
 |Add of(r*r)
 |Sub of (r*r)
 |Imul of (r*r)
+|Xchg of (r*r)
+|Cdq
 |Idiv of r
 |Cmp of (r*r)
 |Jle of int
@@ -27,3 +25,11 @@ type t=
 |Jpo of int
 |Jge of int
 |Jg of int
+|CallPrintNewLine
+|CallScanf
+|CallPrintString
+|CallPrintResult
+|StoreStringPositionInEcx
+|StoreStringLengthInEdx of string
+|JumpToSkipString of string
+|JumpToExit

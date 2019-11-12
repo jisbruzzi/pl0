@@ -37,3 +37,14 @@ let rec run_all (arg:'a Lazylist.gen_t):unit=
   match(arg()) with 
   |Empty->()
   |Cons(t,lst)->run_all lst
+
+let rec ends_with(original:'a Lazylist.gen_t)(ending:'a list):'a Lazylist.gen_t=
+  fun ()->(
+    match (original ()) with
+    | Cons(hd,tl)->Cons(hd,ends_with tl ending)
+    | Empty ->(
+      match ending with
+      |hd::tl -> Cons(hd,ends_with (fun ()->Empty) tl)
+      |[] -> Empty
+    )
+  )

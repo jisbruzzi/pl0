@@ -70,34 +70,39 @@ let process(current:FlowAction.t)(previous:FlowAction.t option):(FlowAction.t op
         Push Eax
       ]
       |DivideOperation->[
-        Pop Ebx;
         Pop Eax;
-        MovConstant(Edx,"0");
+        Pop Ebx;
+        Xchg (Eax,Ebx);
+        Cdq;
         Idiv(Ebx);
         Push Eax
       ]
       |_->[]
     )
-    (* SYSCALLS ------ AYUDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA*)
-    |PrintResult->[
-      (*LabeledInstruction.CallPrintString*)
-    ]
+    |PrintResult->(
+      match previous with
+      |Some(PrintString(s))->[]
+      |_->[
+        LabeledInstruction.Pop Eax;
+        LabeledInstruction.CallPrintResult;
+      ]
+    )
     |PrintNewline->[
-      (*LabeledInstruction.CallPrintNewLine*)
+      LabeledInstruction.CallPrintNewLine
     ]
     |PrintString(s)->[
-      
+      LabeledInstruction.StoreStringPositionInEcx;
+      LabeledInstruction.StoreStringLengthInEdx s;
+      LabeledInstruction.CallPrintString;
+      LabeledInstruction.JumpToSkipString s;
+      LabeledInstruction.Ascii s;
     ]
     | FlowAction.WriteVariableFromInput(v)->[
-      (*
       LabeledInstruction.CallScanf;
-      LabeledInstruction.JumpScanfInterruption;
-      LabeledInstruction.Pop(LabeledInstruction.Eax);
-      LabeledInstruction.MovToMemory(v,LabeledInstruction.Eax);
-      *)
+      LabeledInstruction.Pop Eax;
     ]
     
   )
 
 let run(s:FlowAction.t Lazylist.gen_t):LabeledInstruction.t Lazylist.gen_t=
-  LazylistOps.run process s None
+  LazylistOps.ends_with (LazylistOps.run process s None) [LabeledInstruction.JumpToExit]
