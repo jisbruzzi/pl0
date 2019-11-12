@@ -1,15 +1,14 @@
-type r=Eax|Ebx|Edx|Ecx
+type r=LabeledInstruction.r
 type t=
-|Jmp of int (* JMP label *)
+|Jmp of int (* JMP pos *)
 |MovToRegister of (r*int) (* MOV registro [EDI+nro de var] *)
 |Push of r (* PUSH registro*)
 |Pop of r (* POP registro*)
 |MovToMemory of (int*r) (* MOV [EDI+nro de var] registro *)
-|Call of int (* call label *)
+|Call of int (* call pos *)
 |MovConstant of (r*string) (* MOV registro, constante*)
 |Ascii of string
 |Ret
-|Position of int
 |Neg of r
 |Add of(r*r)
 |Sub of (r*r)
@@ -25,11 +24,3 @@ type t=
 |Jpo of int
 |Jge of int
 |Jg of int
-|CallPrintNewLine
-|CallScanf
-|CallPrintString
-|CallPrintResult
-|StoreStringPositionInEcx
-|StoreStringLengthInEdx of string
-|JumpToSkipString of string
-|JumpToExit

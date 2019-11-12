@@ -63,6 +63,7 @@ let compile (opt:options):unit =
       |> Simplifier.run
       |>(if opt_push_pop then PushPopOptimiser.run else LazylistOps.pass)
       |> (if log_labeled_instructions then LazylistOps.print LabeledInstructionOps.to_string "\n" else LazylistOps.pass)
+      |> Unlabeller.run
       |> LazylistOps.run_all
     |[]->()
   with 
