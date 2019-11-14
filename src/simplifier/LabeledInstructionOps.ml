@@ -3,6 +3,7 @@ let string_of_registry(r)=
   |LabeledInstruction.Eax->"Eax"
   |LabeledInstruction.Ebx->"Ebx"
   |LabeledInstruction.Edx->"Edx"
+  |LabeledInstruction.Ecx->"Ecx"
 
 let to_string(i:LabeledInstruction.t):string=
   match i with
