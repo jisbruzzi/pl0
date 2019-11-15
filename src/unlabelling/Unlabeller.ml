@@ -39,16 +39,14 @@ let known_positions:params={
   print_new_line=5;
   print_string=(-10);
   scanf=(-20);
-  beginning=0;
+  beginning=1000;
   print_result=(-50);
   exit=(-20);
-
-
 }
 
 let unlabel_if_possible(label_positions:(int*int) list)(position:int)(instruction:LabeledInstruction.t)=
   let known=fun (l)->List.mem_assoc l label_positions in
-  let off_l=fun (l)->List.assoc l label_positions - position in
+  let off_l=fun (l)->List.assoc l label_positions - (position + length_of_instruction instruction) in
   let offset=fun(p)->p-position in
   match instruction with
   |MovToRegister(r,v)->Unlabelled(UnlabeledInstruction.MovToRegister(r,v))
@@ -120,16 +118,17 @@ let rec grab_unlabelled(l:(int*maybe_labelled_instruction) list)=
 
 
 let unlabeled(instruction_counter:int)(labeled_instruction:LabeledInstruction.t)(label_counter:int)(label:int):UnlabeledInstruction.t option=
+  let jump_offset = label_counter-(instruction_counter + length_of_instruction labeled_instruction) in
   match labeled_instruction with
-  |Call(l) when l==label->Some(Call(label_counter-instruction_counter))
-  |Jmp(l) when l==label->Some(Jmp(label_counter-instruction_counter))
-  |Jle(l) when l==label->Some(Jle(label_counter-instruction_counter))
-  |Jl(l) when l==label->Some(Jl(label_counter-instruction_counter))
-  |Je(l) when l==label->Some(Je(label_counter-instruction_counter))
-  |Jne(l) when l==label->Some(Jne(label_counter-instruction_counter))
-  |Jpo(l) when l==label->Some(Jpo(label_counter-instruction_counter))
-  |Jge(l) when l==label->Some(Jge(label_counter-instruction_counter))
-  |Jg(l) when l==label->Some(Jg(label_counter-instruction_counter))
+  |Call(l) when l==label->Some(Call(jump_offset))
+  |Jmp(l) when l==label->Some(Jmp(jump_offset))
+  |Jle(l) when l==label->Some(Jle(jump_offset))
+  |Jl(l) when l==label->Some(Jl(jump_offset))
+  |Je(l) when l==label->Some(Je(jump_offset))
+  |Jne(l) when l==label->Some(Jne(jump_offset))
+  |Jpo(l) when l==label->Some(Jpo(jump_offset))
+  |Jge(l) when l==label->Some(Jge(jump_offset))
+  |Jg(l) when l==label->Some(Jg(jump_offset))
   |_-> None
 
 let print_tuple(s:(int*maybe_labelled_instruction))=
@@ -144,7 +143,7 @@ let really_unlabel(source:(int*maybe_labelled_instruction))(stored_instructions:
     | Some(ui)->[]
     | None->(skip_unlabelled  (with_source stored_instructions))
     in let unlabeled_instructions = match s with
-    | Some(ui)->ui::(grab_unlabelled (skip_head stored_instructions))
+    | Some(ui)->[ui]
     | None->(grab_unlabelled (with_source stored_instructions))
     in let next_to_analyse = match s with
     | Some(ui)->(skip_head stored_instructions)
