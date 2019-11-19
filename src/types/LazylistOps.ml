@@ -12,6 +12,12 @@ let rec run(process:'a->'s->('s*'b list*'a list))(source:'a Lazylist.gen_t)(curr
       |(next_state,hd::tl,lst)->lazylist_with (hd::tl) (run process (fun()->lazylist_with lst tl_gen) next_state)
       |(next_state,[],lst)-> (run process (fun()->lazylist_with lst tl_gen) next_state)()
 
+let rec summarize(summarizer:'a->'s->'s)(lst:'a Lazylist.gen_t)(state:'s):'s =
+  match lst () with
+  | Empty->state
+  | Cons(hd,tl)->summarize summarizer tl (summarizer hd state)
+
+
 let rec stateless_run(process:'a->'b option)(source:'a Lazylist.gen_t):('b Lazylist.gen_t)=
   run (fun a n->(1,(match process a with None->[]|Some(e)->[e]),[])) source 1
 
