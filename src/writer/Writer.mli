@@ -1,1 +1,1 @@
-val run:LabeledInstruction.t Lazylist.gen_t->UnlabeledInstruction.t Lazylist.gen_t
+val run:(UnlabeledInstruction.t Lazylist.gen_t)->string

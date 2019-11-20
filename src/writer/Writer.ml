@@ -3,8 +3,55 @@ type ret_tpye={
   max_var_id:int option
 }
 
-let bytes_from_integer(number_of_bytes:int)(conv:int)=
-  (Printf.sprintf "%x" (-20))(* LABURAR ESTOOOOO *)
+let char_part_of_int(significance:int)(conv:int):char=
+  let offset=(8*significance) in
+  let i = (conv land (255 lsl offset)) lsr offset in
+  Char.chr i
+  
+  
+
+let hex_value(c:char):int=
+  match c with
+  | '0'->0
+  | '1'->1
+  | '2'->2
+  | '3'->3
+  | '4'->4
+  | '5'->5
+  | '6'->6
+  | '7'->7
+  | '8'->8
+  | '9'->9
+  | 'A'->10
+  | 'B'->11
+  | 'C'->12
+  | 'D'->13
+  | 'E'->14
+  | 'F'->15
+  | _->10000000
+
+let char_from_hexa(high:char)(low:char):char=
+  let i=(((hex_value high) lsl 4) lor (hex_value low))in
+  Char.chr i
+  
+
+let rec bytes_from_string(s:string):string=
+  match String.length s with
+  | 0->""
+  | 1->"999"
+  | 2->String.make 1 (char_from_hexa (String.get s 0) (String.get s 1))
+  | l->(bytes_from_string (String.sub s 0 2))^(bytes_from_string (String.sub s 2 (l-2)))
+
+let bytes_from_integer(number_of_bytes:int)(conv:int):string=
+  String.concat "" (List.map 
+    (fun(s:int):string->(
+      String.make 1 (char_part_of_int s conv)
+    ))
+    (List.rev (List.init number_of_bytes (fun x -> x)))
+  )
+
+let constant_encoding(constant:string):string=
+  bytes_from_integer 4 (int_of_string constant)
 
 let code_of_instruction(i:UnlabeledInstruction.t):string=
   let bi=bytes_from_integer 4 in
@@ -59,7 +106,21 @@ let summarizer(i:UnlabeledInstruction.t)(s:ret_tpye):ret_tpye=
   }
 
 
+let generate_mov_edi program_length_bytes=
+  let preferred_position=50 in
+  (bytes_from_string "BF") ^ (bytes_from_integer 4 (preferred_position+program_length_bytes))
+
+let generate_zeroes_for_vars(max_var_id:int option):string= 
+  let bytes_num=(match max_var_id with None->0|Some(x)->x+1) in
+  String.make bytes_num (Char.chr 0)
+
 (* NECESITO QUE RUN TAMBIÉN ESCUPA LA CANTIDAD DE VARIABLES Y LA POSICIÓN DE LAS VARIABLES*)
-let run(i:UnlabeledInstruction.t Lazylist.gen_t):ret_tpye=
-  LazylistOps.summarize summarizer i {program="";max_var_id=None}
-  
+let run(i:UnlabeledInstruction.t Lazylist.gen_t):string=
+  let result = LazylistOps.summarize summarizer i {program="";max_var_id=None} in 
+  String.concat "" [
+    (bytes_from_string Header.header);
+    generate_mov_edi (String.length result.program);
+    result.program;
+    generate_zeroes_for_vars result.max_var_id
+  ]
+    
