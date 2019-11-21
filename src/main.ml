@@ -68,7 +68,7 @@ let compile (opt:options):unit =
       |> Unlabeller.run
       |> (if log_unlabeled_instructions then LazylistOps.print UnlabeledInstructionOps.to_string "\n" else LazylistOps.pass)
       |> Writer.run
-      |> (fun (x)->print_string x)
+      |> print_string
     |[]->()
   with 
   |SyntaxError.SyntaxException (e,tc)->(

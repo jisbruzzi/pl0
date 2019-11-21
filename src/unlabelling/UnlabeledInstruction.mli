@@ -12,7 +12,7 @@ type t=
 |Neg of r
 |Add of(r*r)
 |Sub of (r*r)
-|Imul of (r*r)
+|Imul of (r)
 |Xchg of (r*r)
 |Cdq
 |Idiv of r
@@ -24,3 +24,4 @@ type t=
 |Jpo of int
 |Jge of int
 |Jg of int
+|TestAl

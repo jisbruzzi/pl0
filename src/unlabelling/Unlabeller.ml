@@ -1,10 +1,10 @@
 let length_of_instruction(s:LabeledInstruction.t):int=
   match s with
   |Jmp(_)|JumpToSkipString(_)|JumpToExit->5
-  |MovToRegister(_)|StoreStringPositionInEcx|StoreStringLengthInEdx(_)->6
+  |StoreStringPositionInEcx|StoreStringLengthInEdx(_)->5
   |Push(_)->1
   |Pop(_)->1
-  |MovToMemory(_)->6
+  |MovToRegister(_)|MovToMemory(_)->6
   |Call(_)|CallPrintNewLine|CallScanf|CallPrintString|CallPrintResult->5
   |MovConstant(_)->5
   |Ascii(s)->String.length s
@@ -14,6 +14,7 @@ let length_of_instruction(s:LabeledInstruction.t):int=
   |Cdq->1
   |Xchg(_)->1
   |Jle(_)|Jl(_)|Je(_)|Jne(_)|Jge(_)|Jg(_)|Jpo(_)->2
+  |TestAl->2
 
 type indexed_instruction=int*LabeledInstruction.t
 let add_counter(source:LabeledInstruction.t)(counter:int):(int*indexed_instruction list* LabeledInstruction.t list)=
@@ -36,18 +37,23 @@ type maybe_labelled_instruction=Labelled of LabeledInstruction.t | Unlabelled of
 
 type params={print_new_line:int;print_string:int;scanf:int;beginning:int;print_result:int;exit:int}
 let known_positions:params={
-  print_new_line=5;
-  print_string=(-10);
-  scanf=(-20);
-  beginning=1000;
-  print_result=(-50);
-  exit=(-20);
+  print_new_line=134513024;(* 8048180 *)
+  print_string=134513008;(* 8048170 *)
+  print_result=134513040;(* 8048190 *)
+  beginning=5 + 134513792;(* 5 es el largo del mov edi y el otro nro es donde inicia el programa segun la preferred position (la ubicación del movedi*)
+  scanf=134513424;(* 8048310 *)
+  exit=134513408;(* 8048300 *)
 }
 
 let unlabel_if_possible(label_positions:(int*int) list)(position:int)(instruction:LabeledInstruction.t)=
   let known=fun (l)->List.mem_assoc l label_positions in
-  let off_l=fun (l)->List.assoc l label_positions - (position + length_of_instruction instruction) in
-  let offset=fun(p)->p-position in
+  let off_l=fun (l)->(
+    let dif = (List.assoc l label_positions) - (position + length_of_instruction instruction) in(
+      (*print_string( Printf.sprintf "salto a:%X desde:%X la diferencia es:%X" (List.assoc l label_positions) position dif);*)
+      dif
+    )
+    ) in
+  let offset=fun(p)->p - (position + length_of_instruction instruction) in
   match instruction with
   |MovToRegister(r,v)->Unlabelled(UnlabeledInstruction.MovToRegister(r,v))
   |Push(r)->Unlabelled(UnlabeledInstruction.Push(r))
@@ -60,8 +66,9 @@ let unlabel_if_possible(label_positions:(int*int) list)(position:int)(instructio
   |Neg(r)->Unlabelled(Neg(r))
   |Add(r1,r2)->Unlabelled(Add(r1,r2))
   |Sub(r1,r2)->Unlabelled(Sub(r1,r2))
-  |Imul(r1,r2)->Unlabelled(Imul(r1,r2))
+  |Imul(r)->Unlabelled(Imul(r))
   |Xchg(r1,r2)->Unlabelled(Xchg(r1,r2))
+  |TestAl->Unlabelled(TestAl)
   |Cdq->Unlabelled(Cdq)
   |Idiv(r)->Unlabelled(Idiv(r))
   |Cmp(r1,r2)->Unlabelled(Cmp(r1,r2))
@@ -87,7 +94,8 @@ let unlabel_if_possible(label_positions:(int*int) list)(position:int)(instructio
   |StoreStringLengthInEdx(s)->Unlabelled(MovConstant(Edx,string_of_int (String.length s)))
   |JumpToSkipString(s)->Unlabelled(Jmp(
     length_of_instruction(Jmp 1) + 
-    String.length(s)
+    String.length(s) -
+    length_of_instruction(Call(1))
   ))
   |JumpToExit->Unlabelled(Jmp(offset known_positions.exit))
 

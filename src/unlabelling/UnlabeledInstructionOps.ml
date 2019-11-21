@@ -12,7 +12,7 @@ let to_string(ui:UnlabeledInstruction.t):string=
   |Ret->"Ret"
   |Add(r1,r2)->"Add "^reg r1^" "^reg r2
   |Sub(r1,r2)->"Sub "^reg r1^" "^reg r2
-  |Imul(r1,r2)->"Imul "^reg r1^" "^reg r2
+  |Imul(r1)->"Imul "^reg r1
   |Xchg(r1,r2)->"Xchg "^reg r1^" "^reg r2
   |Cmp(r1,r2)->"Cmp "^reg r1^" "^reg r2
   |Cdq->"Cdq"
@@ -25,3 +25,4 @@ let to_string(ui:UnlabeledInstruction.t):string=
   |Jg(p)->"Jg "^(string_of_int p)
   |Jmp(p)->"Jmp "^(string_of_int p)
   |Call(p)->"Call "^(string_of_int p)
+  |TestAl->"TestAl "

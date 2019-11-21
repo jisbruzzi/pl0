@@ -47,7 +47,7 @@ let bytes_from_integer(number_of_bytes:int)(conv:int):string=
     (fun(s:int):string->(
       String.make 1 (char_part_of_int s conv)
     ))
-    (List.rev (List.init number_of_bytes (fun x -> x)))
+    (List.init number_of_bytes (fun x -> x))
   )
 
 let constant_encoding(constant:string):string=
@@ -56,12 +56,12 @@ let constant_encoding(constant:string):string=
 let code_of_instruction(i:UnlabeledInstruction.t):string=
   let bi=bytes_from_integer 4 in
   let bs=bytes_from_string in
-  let bc=bytes_from_integer 2 in
+  let bc=bytes_from_integer 1 in
   match i with
   |Jmp(o)->(bs "E9")^(bi o)
   |Call(o)->(bs "E8")^(bi o)
-  |MovToRegister(Eax,v)->(bs "8B87")^(bi v)
-  |MovToMemory(v,Eax)->(bs "8987")^(bi v)
+  |MovToRegister(Eax,v)->(bs "8B87")^(bi (v*4))
+  |MovToMemory(v,Eax)->(bs "8987")^(bi (v*4))
   |MovConstant(Eax,c)->(bs "B8")^(constant_encoding c)
   |MovConstant(Ecx,c)->(bs "B9")^(constant_encoding c)
   |MovConstant(Edx,c)->(bs "BA")^(constant_encoding c)
@@ -73,7 +73,7 @@ let code_of_instruction(i:UnlabeledInstruction.t):string=
   |Neg(Eax)->(bs "F7D8")
   |Add(Eax,Ebx)->(bs "01D8")
   |Sub(Eax,Ebx)->(bs "29D8")
-  |Imul(Eax,Ebx)->(bs "F7EB")
+  |Imul(Ebx)->(bs "F7EB")
   |Xchg(Eax,Ebx)->(bs "93")
   |Cdq->(bs "99")
   |Idiv(Ebx)->(bs "F7FB")
@@ -85,7 +85,8 @@ let code_of_instruction(i:UnlabeledInstruction.t):string=
   |Jpo(o)->(bs "7B")^(bc o)
   |Jge(o)->(bs "7D")^(bc o)
   |Jg(o)->(bs "7F")^(bc o)
-  |_->"99999"
+  |TestAl->(bs "A801")
+  |_->"9999"(*UnlabeledInstructionOps.to_string i*)
 
 let new_max_var_id(current:int option)(i:UnlabeledInstruction.t):int option=
   let with_id=fun(v:int)->(
@@ -107,20 +108,46 @@ let summarizer(i:UnlabeledInstruction.t)(s:ret_tpye):ret_tpye=
 
 
 let generate_mov_edi program_length_bytes=
-  let preferred_position=50 in
-  (bytes_from_string "BF") ^ (bytes_from_integer 4 (preferred_position+program_length_bytes))
+  let program_beginning=134513792 in
+  (bytes_from_string "BF") ^ (bytes_from_integer 4 (program_beginning+program_length_bytes + 5))
 
 let generate_zeroes_for_vars(max_var_id:int option):string= 
-  let bytes_num=(match max_var_id with None->0|Some(x)->x+1) in
+  let bytes_num=(match max_var_id with None->0|Some(x)->x+1)*4 in
   String.make bytes_num (Char.chr 0)
 
-(* NECESITO QUE RUN TAMBIÉN ESCUPA LA CANTIDAD DE VARIABLES Y LA POSICIÓN DE LAS VARIABLES*)
+(*En este momento, es necesario ajustar los campos FileSize (posiciones
+68-71, o 0044-0047 en hexadecimal) y MemorySize (posiciones 72-75, o
+0048-004B en hexadecimal), colocando allí el tamaño final del archivo
+ejecutable.
+
+Por último, se debe realizar el ajuste del campo Size del encabezado
+de la sección text (posiciones 201-204, o 00C9-00CC en hexadecimal),
+colocando allí el tamaño de la sección text.
+
+*)
+
+let replace(base:string)(pos:int)(replaced:string):string=
+  let base_len=String.length base in
+  let replaced_len=String.length replaced in
+  let before=String.sub base 0 pos in
+  let after=String.sub base (pos+replaced_len) (base_len-pos-replaced_len) in
+  (before^replaced^after)
+
+let correct_program(program:string)(full_size:int):string=
+  let text_size=full_size-224 in
+  let full_size=(bytes_from_integer 4 full_size) in
+  let program = replace program 68 full_size in (* fixed_file_size *)
+  let program = replace program 72 full_size in (* fixed_memory_size *)
+  let program = replace program 201 (bytes_from_integer 4 text_size) in (* largo sección text *)
+  program
+  
 let run(i:UnlabeledInstruction.t Lazylist.gen_t):string=
   let result = LazylistOps.summarize summarizer i {program="";max_var_id=None} in 
-  String.concat "" [
+  let program = String.concat "" [
     (bytes_from_string Header.header);
     generate_mov_edi (String.length result.program);
     result.program;
     generate_zeroes_for_vars result.max_var_id
-  ]
+  ] in
+  correct_program program (String.length program)
     

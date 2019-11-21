@@ -13,7 +13,7 @@ type t=
 |Neg of r
 |Add of(r*r)
 |Sub of (r*r)
-|Imul of (r*r)
+|Imul of (r)
 |Xchg of (r*r)
 |Cdq
 |Idiv of r
@@ -33,3 +33,4 @@ type t=
 |StoreStringLengthInEdx of string
 |JumpToSkipString of string
 |JumpToExit
+|TestAl

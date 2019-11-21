@@ -37,7 +37,11 @@ let process(current:FlowAction.t)(previous:FlowAction.t option):(FlowAction.t op
         |LessCheck->cmp (Jl label)
         |EqualsCheck->cmp (Je label)
         |DistinctCheck->cmp (Jne label)
-        |OddCheck->cmp (Jpo label)
+        |OddCheck->[
+            LabeledInstruction.Pop Eax;
+            LabeledInstruction.TestAl;
+            LabeledInstruction.Jpo(label);
+          ] 
         |GreaterOrEqualCheck->cmp (Jge label)
         |GreaterCheck->cmp (Jg label)
         |_->[]
@@ -54,19 +58,20 @@ let process(current:FlowAction.t)(previous:FlowAction.t option):(FlowAction.t op
       |PlusOperation->[
         Pop Eax;
         Pop Ebx;
-        Add(Ebx,Eax);
+        Add(Eax,Ebx);
         Push Eax
       ]
       |MinusOperation->[
         Pop Eax;
         Pop Ebx;
-        Sub(Ebx,Eax);
+        Xchg (Eax,Ebx);
+        Sub(Eax,Ebx);
         Push Eax
       ]
       |TimesOperation->[
         Pop Eax;
         Pop Ebx;
-        Imul(Ebx,Eax);
+        Imul(Ebx);
         Push Eax
       ]
       |DivideOperation->[
@@ -99,7 +104,7 @@ let process(current:FlowAction.t)(previous:FlowAction.t option):(FlowAction.t op
     ]
     | FlowAction.WriteVariableFromInput(v)->[
       LabeledInstruction.CallScanf;
-      LabeledInstruction.Pop Eax;
+      LabeledInstruction.MovToMemory(v,Eax)
     ]
     
   )

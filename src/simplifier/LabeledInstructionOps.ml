@@ -22,7 +22,7 @@ let to_string(i:LabeledInstruction.t):string=
   |Neg(r)->"Neg "^(string_of_registry r)
   |Add(r1,r2)->"Add "^(string_of_registry r1)^(string_of_registry r2)
   |Sub(r1,r2)->"Sub "^(string_of_registry r1)^(string_of_registry r2)
-  |Imul(r1,r2)->"Imul "^(string_of_registry r1)^(string_of_registry r2)
+  |Imul(r1)->"Imul "^(string_of_registry r1)
   |Idiv(r)->"Idiv "^(string_of_registry r)
   |Cmp(r1,r2)->"CMP "^(string_of_registry r1)^" "^(string_of_registry r2)
   |Jle(l)->"Jle "^(string_of_int l)
@@ -40,3 +40,4 @@ let to_string(i:LabeledInstruction.t):string=
   |JumpToSkipString(s)->"JumpToSkipString "^s
   |Xchg(r1,r2)->"Xchg "^(string_of_registry r1)^(string_of_registry r2)
   |JumpToExit->"JumpToExit"
+  |TestAl->"TestAl"
