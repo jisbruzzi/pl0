@@ -27,3 +27,4 @@ type t=
 |WriteExpression
 |ProcedureBlockDeclaration
 |NoLabel
+|RepeatUntilProposition

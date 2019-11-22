@@ -120,6 +120,8 @@ let translated_action(action:Action.t)(state:remover_state):ContextualizedAction
   |PrintNewline->Some(PrintNewline)
   |PrintString(value)->Some(PrintString(value))
   |PrintResult->Some(PrintResult)
+  |BeginRepeatUntilBlock->Some(BeginRepeatUntilBlock)
+  |EndRepeatUntilBlock->Some(EndRepeatUntilBlock)
 
 
 

@@ -20,4 +20,5 @@ let string_of_action(a:Action.t):string=
   |PrintResult->"PrintResult"
   |PrintString(s)->"PrintString"^s
   |BeginWhileBlock->"BeginWhileBlock"
-
+  |BeginRepeatUntilBlock->"BeginRepeatUntilBlock"
+  |EndRepeatUntilBlock->"EndRepeatUntilBlock"

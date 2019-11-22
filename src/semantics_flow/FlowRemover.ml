@@ -2,6 +2,7 @@ type remover_ctx=
 |LabelAfterReturn of int (* cuando se encuentre un return, se pone este label *)
 |LabelAfterEndIf of int
 |EndWhile of {jump_before:int;label_after:int}
+|EndRepeat of int
 
 type pl_type={procedure_id:int;label:int}
 type remover_state= {ctxs:remover_ctx list;next_label_id:int;procedure_labels:pl_type list}
@@ -48,6 +49,13 @@ let begin_while(state:remover_state)=
   (state,[
     (FlowAction.LabeledPosition beginning_label)
   ])
+let begin_repeat(state:remover_state)=
+  let beginning_label,state=(get_next_label state) in
+  let state=state_with_context state (EndRepeat(beginning_label) ) in
+  (state,[
+    (FlowAction.LabeledPosition beginning_label)
+  ])
+
 
 let declare_procedure (state:remover_state) (id:int)=
   let label_skip_all,state=(get_next_label state) in
@@ -70,6 +78,11 @@ let unstack_context(state:remover_state)=
     FlowAction.JumpTo jb;
     FlowAction.LabeledPosition la
   ])
+  |Some(EndRepeat(l))->(
+      let state=state_without_current_context state in 
+      jump_conditionally_to state l
+    )
+
   |None->(state,[])
 
 let remove_flow(a:ContextualizedAction.t)(state:remover_state):(remover_state*FlowAction.t list* ContextualizedAction.t list)=
@@ -88,11 +101,13 @@ let remove_flow(a:ContextualizedAction.t)(state:remover_state):(remover_state*Fl
     |OkThen->(ok_then state)
     |OkDo->(ok_do state)
     |BeginWhileBlock->(begin_while state)
+    |BeginRepeatUntilBlock->(begin_repeat state)
     |DeclareProcedure(id)->(declare_procedure state id)
 
     |EndIfBlock->(unstack_context state)
     |EndWhileBlock->(unstack_context state)
     |Return->(unstack_context state)
+    |EndRepeatUntilBlock->(unstack_context state)
   )in (state,results,[])
   
 

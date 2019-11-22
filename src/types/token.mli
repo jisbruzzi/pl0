@@ -38,3 +38,5 @@ type t=
 |Distinct
 |BadString of (char option)
 |BadInteger of string
+|Repeat
+|Until

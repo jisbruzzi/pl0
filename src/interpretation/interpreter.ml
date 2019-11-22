@@ -67,6 +67,10 @@ let rec next_state(state:interpreter_state)(change:ContextChange.t)=
     |ContextChange.Passes(_,(_,Token.Do)),_->Terminal([OkDo],context_stack)
     |ContextChange.Exits(SyntaxLabel.WhileProposition),_->Terminal([EndWhileBlock],context_stack)
 
+    (* repeat until *)
+    |ContextChange.Passes(_,(_,Token.Repeat)),_->Terminal([BeginRepeatUntilBlock],context_stack)
+    |ContextChange.Exits(SyntaxLabel.RepeatUntilProposition),_->Terminal([EndRepeatUntilBlock],context_stack)
+
     (* insertar acciones de declaración y uso de variables,constantes, procedures *)
     |ContextChange.Passes(label,(coords,token)),_-> (
       match label,token with

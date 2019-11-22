@@ -15,3 +15,5 @@ type t=
 |PrintString of string
 |PrintResult
 |Return
+|BeginRepeatUntilBlock
+|EndRepeatUntilBlock

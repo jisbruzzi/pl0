@@ -48,17 +48,17 @@ let compile (opt:options):unit =
       |> (if log then ReadFile.log_lines_and_pass else LazylistOps.pass)
       |> ReadFile.add_coordinates
       |> Tokenize.run
-      |> Tokenize.check
+      |> Tokenize.check (* agregar token nuevo  LISTO *)
       |> (if print_tokens then (LazylistOps.print TokenOps.string_of_token_coords "|") else LazylistOps.pass)
-      |> (Verifier.run log_syntax)
+      |> (Verifier.run log_syntax) (* agregar captura para repeat until LISTO *)
       |> (if log_syntax_result then (LazylistOps.print TokenWithLabelsOps.string_of_token_with_label "\n") else LazylistOps.pass)
-      |> Desyntax.run
+      |> Desyntax.run 
       |> (if log_desyntax then LazylistOps.print ContextChangeOps.as_string "\n" else LazylistOps.pass)
-      |> Interpreter.run
+      |> Interpreter.run (* agregar interpretacion para repeat until LISTO *)
       |> (if log_interpretation then (LazylistOps.print ActionOps.string_of_action "\n") else LazylistOps.pass)
-      |> ContextRemover.run
+      |> ContextRemover.run 
       |> (if log_no_context then LazylistOps.print ContextRemoverOps.string_of_contextualized "\n" else LazylistOps.pass)
-      |> FlowRemover.run
+      |> FlowRemover.run (* Agregar transformaciones a FlowAction LISTO *)
       |> (if opt_proc_train then ProcedureTrainOptimiser.run else LazylistOps.pass)
       |> (if opt_proc_call then ProcedureCallOptimiser.run else LazylistOps.pass)
       |> (if log_no_flow then LazylistOps.print FlowActionOps.to_string "\n" else LazylistOps.pass)

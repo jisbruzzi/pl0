@@ -19,3 +19,5 @@ type t=
 |PrintNewline
 |PrintString of string
 |PrintResult
+|BeginRepeatUntilBlock
+|EndRepeatUntilBlock

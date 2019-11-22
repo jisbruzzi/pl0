@@ -18,3 +18,5 @@ let string_of_contextualized(a:ContextualizedAction.t):string=
   |PrintString(s)->"PrintString"
   |PrintResult->"PrintResult"
   |Return->"Return"
+  |BeginRepeatUntilBlock->"BeginRepeatUntilBlock"
+  |EndRepeatUntilBlock->"EndRepeatUntilBlock"

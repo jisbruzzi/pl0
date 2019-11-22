@@ -41,6 +41,8 @@ let string_of_token (t:token)=
   | Distinct -> "DISTINCT"
   | BadString(_)->"BAD_STRING"
   | BadInteger(_)->"BAD INTEGER"
+  | Repeat->"REPEAT"
+  | Until->"UNTIL"
 
 let string_of_token_coords (tc:TokenWithCoords.t)=
   match tc with (Coords.Coord(line,col),t) -> 
@@ -77,4 +79,6 @@ let get_ident_or_keyword (s:string):token=
   | "WRITELN" ->Writeln
   | "WRITE" -> Write
   | "ODD" -> Odd
+  | "REPEAT"->Repeat
+  | "UNTIL"->Until
   | s_mayus -> Ident(s_mayus)

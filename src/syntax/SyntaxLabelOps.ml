@@ -28,3 +28,4 @@ let string_of_label(l:SyntaxLabel.t)=
   |WriteExpression->"WriteExpression"
   |ProcedureBlockDeclaration->"ProcedureBlockDeclaration"
   |NoLabel->"NoLabel"
+  |RepeatUntilProposition->"RepeatUntilProposition"

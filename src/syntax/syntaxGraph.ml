@@ -62,14 +62,20 @@ let condition_fn (expression:pattern) ():pattern = Or([
 
 let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
   let proposition=In(proposition_fn condition expression,"proposicion") in 
-  Labeled(SyntaxLabel.Proposition,Maybe(Or([  
+  Labeled(SyntaxLabel.Proposition,Maybe(Or([
+
     Labeled(SyntaxLabel.AssignationProposition,Sequence([
       Labeled(SyntaxLabel.VariableAssign,m_ident);m Token.Assignation;expression
     ]));
+
     Sequence([m Token.Call; Labeled(SyntaxLabel.ProcedureNameCall,m_ident)]);
+
     (Sequence([m Token.Begin;proposition;Asterisk(Sequence([m Token.Semicolon; proposition]));m Token.End]));
+
     Labeled(SyntaxLabel.IfProposition,(Sequence([m Token.If;condition;m Token.Then;proposition])));
+
     Labeled(SyntaxLabel.WhileProposition,Sequence([m Token.While;condition;m Token.Do;proposition]));
+
     Labeled(SyntaxLabel.WriteLineProposition,(Sequence([m Token.Writeln;Maybe(Sequence([
       m Token.OpenParenthesis; 
       Or([Labeled(SyntaxLabel.WriteExpression, m_string);Labeled(SyntaxLabel.WriteExpression,expression)]);
@@ -78,6 +84,7 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
       ]));
       m Token.ClosedParenthesis
     ]))])));
+
     (Sequence([
       m Token.Write;
       m Token.OpenParenthesis;
@@ -87,6 +94,7 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
       ]));
       m Token.ClosedParenthesis
     ]));
+
     (Sequence([
       m Token.Readln;
       m Token.OpenParenthesis;
@@ -94,6 +102,13 @@ let rec proposition_fn (condition:pattern)(expression:pattern) ():pattern =
       Asterisk(Sequence([m Token.Comma;Labeled(SyntaxLabel.VariableAssignFromReadln,m_ident)]));
       m Token.ClosedParenthesis
     ]));
+
+    Labeled(SyntaxLabel.RepeatUntilProposition,(Sequence([
+      m Token.Repeat;
+      proposition;Asterisk(Sequence([m Token.Semicolon; proposition]));
+      m Token.Until;
+      condition;
+    ])))
 
   ])))
 
